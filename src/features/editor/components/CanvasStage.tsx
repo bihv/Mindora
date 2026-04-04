@@ -14,8 +14,6 @@ import type {
 
 type CanvasStageProps = {
   camera: CameraState;
-  canvasHeight: number;
-  canvasWidth: number;
   connectors: ConnectorItem[];
   draggingNodeId: string | null;
   hasActiveSelection: boolean;
@@ -42,8 +40,6 @@ type CanvasStageProps = {
 
 export function CanvasStage({
   camera,
-  canvasHeight,
-  canvasWidth,
   connectors,
   draggingNodeId,
   hasActiveSelection,
@@ -73,9 +69,8 @@ export function CanvasStage({
       <svg
         aria-hidden="true"
         className="connections"
-        height={canvasHeight}
-        viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
-        width={canvasWidth}
+        height="100%"
+        width="100%"
       >
         {connectors.map((connector) => (
           <path

@@ -7,7 +7,6 @@ import {
 import "./App.css";
 import { getVisibleNodeIds } from "./mindmap";
 import {
-  CANVAS_PADDING,
   MIN_CANVAS_HEIGHT,
   MIN_CANVAS_WIDTH,
   NODE_CONTEXT_MENU_GAP,
@@ -54,11 +53,11 @@ function App() {
 
   const minimapRef = useRef<SVGSVGElement | null>(null);
   const canvasWidth = Math.max(
-    canvasState.viewportSize.width - CANVAS_PADDING * 2,
+    canvasState.viewportSize.width,
     MIN_CANVAS_WIDTH,
   );
   const canvasHeight = Math.max(
-    canvasState.viewportSize.height - CANVAS_PADDING * 2,
+    canvasState.viewportSize.height,
     MIN_CANVAS_HEIGHT,
   );
 
@@ -266,113 +265,105 @@ function App() {
   const selectedNodeMenuTop = clamp(selectedNodePosition.y, 24, canvasHeight - 24);
 
   return (
-    <main className="app-shell">
-      <section className="workspace">
-        <section className="canvas-panel">
-          <div
-            className="canvas-viewport"
-            onWheel={canvasState.handleViewportWheel}
-            ref={canvasState.viewportRef}
-          >
-            <CanvasControls
-              isOutlineOpen={editor.isOutlineOpen}
-              onAutoLayout={editor.handleAutoLayout}
-              onToggleOutline={editor.toggleOutline}
-            />
+    <div
+      className="canvas-viewport"
+      onWheel={canvasState.handleViewportWheel}
+      ref={canvasState.viewportRef}
+    >
+      <CanvasControls
+        isOutlineOpen={editor.isOutlineOpen}
+        onAutoLayout={editor.handleAutoLayout}
+        onToggleOutline={editor.toggleOutline}
+      />
 
-            <CanvasStage
-              camera={canvasState.camera}
-              canvasHeight={canvasHeight}
-              canvasWidth={canvasWidth}
-              connectors={connectors}
-              draggingNodeId={draggingState.dragging?.nodeId ?? null}
-              hasActiveSelection={editor.hasActiveSelection}
-              mindMap={editor.mindMap}
-              nodeFocusStates={nodeFocusStates}
-              onCanvasClick={editor.clearSelection}
-              onNodeContextMenu={(nodeId, event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                editor.selectNode(nodeId, {
-                  openMenu: true,
-                  showInspector: true,
-                });
-              }}
-              onNodePointerDown={draggingState.startDragging}
-              onNodeSelect={(nodeId) =>
-                editor.selectNode(nodeId, {
-                  openMenu: false,
-                  showInspector: true,
-                })
-              }
-              onStagePointerDown={(event) =>
-                canvasState.startPanning(event, editor.clearSelection)
-              }
-              panning={canvasState.panning !== null}
-              searchMatchIds={searchMatchIds}
-              selectedNodeId={editor.selectedNodeId}
-              stagePositions={stagePositions}
-              visibleNodeIds={visibleNodeIds}
-            >
-              <NodeContextMenu
-                isVisible={
-                  editor.hasActiveSelection &&
-                  editor.editorState.isNodeMenuOpen &&
-                  visibleNodeIdSet.has(editor.selectedNodeId)
-                }
-                left={selectedNodeMenuLeft}
-                onAddChild={() => editor.handleAddChild(editor.selectedNode.id)}
-                onAddSibling={() => editor.handleAddSibling(editor.selectedNode.id)}
-                onDelete={editor.handleDeleteSelected}
-                onToggleCollapsed={() =>
-                  editor.handleToggleCollapsed(editor.selectedNode.id)
-                }
-                selectedNode={editor.selectedNode}
-                top={selectedNodeMenuTop}
-              />
-            </CanvasStage>
+      <CanvasStage
+        camera={canvasState.camera}
+        connectors={connectors}
+        draggingNodeId={draggingState.dragging?.nodeId ?? null}
+        hasActiveSelection={editor.hasActiveSelection}
+        mindMap={editor.mindMap}
+        nodeFocusStates={nodeFocusStates}
+        onCanvasClick={editor.clearSelection}
+        onNodeContextMenu={(nodeId, event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          editor.selectNode(nodeId, {
+            openMenu: true,
+            showInspector: true,
+          });
+        }}
+        onNodePointerDown={draggingState.startDragging}
+        onNodeSelect={(nodeId) =>
+          editor.selectNode(nodeId, {
+            openMenu: false,
+            showInspector: true,
+          })
+        }
+        onStagePointerDown={(event) =>
+          canvasState.startPanning(event, editor.clearSelection)
+        }
+        panning={canvasState.panning !== null}
+        searchMatchIds={searchMatchIds}
+        selectedNodeId={editor.selectedNodeId}
+        stagePositions={stagePositions}
+        visibleNodeIds={visibleNodeIds}
+      >
+        <NodeContextMenu
+          isVisible={
+            editor.hasActiveSelection &&
+            editor.editorState.isNodeMenuOpen &&
+            visibleNodeIdSet.has(editor.selectedNodeId)
+          }
+          left={selectedNodeMenuLeft}
+          onAddChild={() => editor.handleAddChild(editor.selectedNode.id)}
+          onAddSibling={() => editor.handleAddSibling(editor.selectedNode.id)}
+          onDelete={editor.handleDeleteSelected}
+          onToggleCollapsed={() =>
+            editor.handleToggleCollapsed(editor.selectedNode.id)
+          }
+          selectedNode={editor.selectedNode}
+          top={selectedNodeMenuTop}
+        />
+      </CanvasStage>
 
-            <OutlineDrawer
-              hasActiveSelection={editor.hasActiveSelection}
-              isOpen={editor.isOutlineOpen}
-              mindMap={editor.mindMap}
-              onSearchQueryChange={editor.setSearchQuery}
-              onSelectNode={(nodeId) =>
-                editor.selectNode(nodeId, { center: true, closeOutline: true })
-              }
-              outlineSearchVisibleSet={outlineSearchVisibleSet}
-              searchMatchIds={searchMatchIds}
-              searchMatchesCount={searchMatches.length}
-              searchQuery={editor.editorState.searchQuery}
-              selectedNodeId={editor.selectedNodeId}
-              totalNodes={totalNodes}
-            />
+      <OutlineDrawer
+        hasActiveSelection={editor.hasActiveSelection}
+        isOpen={editor.isOutlineOpen}
+        mindMap={editor.mindMap}
+        onSearchQueryChange={editor.setSearchQuery}
+        onSelectNode={(nodeId) =>
+          editor.selectNode(nodeId, { center: true, closeOutline: true })
+        }
+        outlineSearchVisibleSet={outlineSearchVisibleSet}
+        searchMatchIds={searchMatchIds}
+        searchMatchesCount={searchMatches.length}
+        searchQuery={editor.editorState.searchQuery}
+        selectedNodeId={editor.selectedNodeId}
+        totalNodes={totalNodes}
+      />
 
-            <InspectorDrawer
-              isOpen={editor.isInspectorOpen && editor.hasActiveSelection}
-              onNodeColorChange={(color) =>
-                editor.handleNodeColorChange(editor.selectedNode.id, color)
-              }
-              onNodeNotesChange={(value) =>
-                editor.handleNodeNotesChange(editor.selectedNode.id, value)
-              }
-              onNodeTitleChange={(value) =>
-                editor.handleNodeTitleChange(editor.selectedNode.id, value)
-              }
-              selectedNode={editor.selectedNode}
-            />
+      <InspectorDrawer
+        isOpen={editor.isInspectorOpen && editor.hasActiveSelection}
+        onNodeColorChange={(color) =>
+          editor.handleNodeColorChange(editor.selectedNode.id, color)
+        }
+        onNodeNotesChange={(value) =>
+          editor.handleNodeNotesChange(editor.selectedNode.id, value)
+        }
+        onNodeTitleChange={(value) =>
+          editor.handleNodeTitleChange(editor.selectedNode.id, value)
+        }
+        selectedNode={editor.selectedNode}
+      />
 
-            {!editor.isInspectorOpen ? (
-              <MindMapMinimap
-                minimap={minimap}
-                minimapRef={minimapRef}
-                onPointerDown={handleMinimapPointerDown}
-              />
-            ) : null}
-          </div>
-        </section>
-      </section>
-    </main>
+      {!editor.isInspectorOpen ? (
+        <MindMapMinimap
+          minimap={minimap}
+          minimapRef={minimapRef}
+          onPointerDown={handleMinimapPointerDown}
+        />
+      ) : null}
+    </div>
   );
 }
 

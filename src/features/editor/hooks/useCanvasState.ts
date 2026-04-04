@@ -7,7 +7,6 @@ import {
   type WheelEvent as ReactWheelEvent,
 } from "react";
 import {
-  CANVAS_PADDING,
   NODE_HEIGHT,
   NODE_WIDTH,
 } from "../constants";
@@ -38,14 +37,8 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
       const document = latestDocumentRef.current;
       const node = document?.nodes[nodeId];
       const viewport = viewportRef.current;
-      const width = Math.max(
-        (viewport?.clientWidth ?? viewportSize.width) - CANVAS_PADDING * 2,
-        0,
-      );
-      const height = Math.max(
-        (viewport?.clientHeight ?? viewportSize.height) - CANVAS_PADDING * 2,
-        0,
-      );
+      const width = Math.max(viewport?.clientWidth ?? viewportSize.width, 0);
+      const height = Math.max(viewport?.clientHeight ?? viewportSize.height, 0);
 
       if (!node || width <= 0 || height <= 0) {
         return false;
