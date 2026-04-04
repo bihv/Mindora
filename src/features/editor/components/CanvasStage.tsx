@@ -29,6 +29,7 @@ type CanvasStageProps = {
     event: ReactPointerEvent<HTMLElement>,
   ) => void;
   onNodeSelect: (nodeId: string) => void;
+  onToggleCollapsed: (nodeId: string) => void;
   onStagePointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   panning: boolean;
   searchMatchIds: Set<string>;
@@ -49,6 +50,7 @@ export function CanvasStage({
   onNodeContextMenu,
   onNodePointerDown,
   onNodeSelect,
+  onToggleCollapsed,
   onStagePointerDown,
   panning,
   searchMatchIds,
@@ -126,7 +128,23 @@ export function CanvasStage({
             </div>
 
             {node.childrenIds.length > 0 ? (
-              <span className="mind-node__badge">{node.childrenIds.length}</span>
+              <button
+                aria-label={node.collapsed ? "Expand node" : "Collapse node"}
+                className={`mind-node__toggle${
+                  node.collapsed ? " mind-node__toggle--collapsed" : ""
+                }`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleCollapsed(node.id);
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+                type="button"
+              >
+                <span className="mind-node__toggle-icon">
+                  {node.collapsed ? "+" : "-"}
+                </span>
+                <span className="mind-node__badge">{node.childrenIds.length}</span>
+              </button>
             ) : null}
           </article>
         );

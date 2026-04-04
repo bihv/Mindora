@@ -299,6 +299,7 @@ function App() {
             showInspector: true,
           })
         }
+        onToggleCollapsed={editor.handleToggleCollapsed}
         onStagePointerDown={(event) =>
           canvasState.startPanning(event, editor.clearSelection)
         }
