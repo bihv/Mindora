@@ -1,0 +1,16 @@
+export const HISTORY_LIMIT = 80;
+export const NODE_WIDTH = 220;
+export const NODE_HEIGHT = 104;
+export const NODE_CONTEXT_MENU_WIDTH = 152;
+export const NODE_CONTEXT_MENU_GAP = 12;
+export const CANVAS_PADDING = 18;
+export const MIN_CANVAS_WIDTH = 320;
+export const MIN_CANVAS_HEIGHT = 240;
+export const MIN_BRANCH_GAP = 48;
+export const MINIMAP_WIDTH = 220;
+export const MINIMAP_HEIGHT = 152;
+export const MINIMAP_PADDING = 12;
+export const MINIMAP_WORLD_PADDING = 120;
+export const CONNECTOR_CURVE_OFFSET = 100;
+export const AUTO_LAYOUT_HORIZONTAL_GAP = 340;
+export const AUTO_LAYOUT_VERTICAL_GAP = 42;
