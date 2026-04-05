@@ -17,6 +17,7 @@ type UseDesktopAppMenuArgs = {
   isOutlineOpen: boolean;
   onAutoLayout: () => void;
   onExportFile: (format: ExportFormat) => Promise<void> | void;
+  onNewMindMap: () => void;
   onOpenFile: () => Promise<void> | void;
   onRedo: () => void;
   onSaveFile: () => Promise<void> | void;
@@ -30,6 +31,7 @@ type DesktopAppMenu = {
   exportPngItem: MenuItem;
   exportSvgItem: MenuItem;
   menu: Menu;
+  newMindMapItem: MenuItem;
   openItem: MenuItem;
   outlineItem: CheckMenuItem;
   redoItem: MenuItem;
@@ -86,6 +88,7 @@ export function useDesktopAppMenu(args: UseDesktopAppMenuArgs): boolean {
 async function createDesktopAppMenu(
 ): Promise<DesktopAppMenu> {
   const [
+    newMindMapItem,
     openItem,
     saveItem,
     exportPngItem,
@@ -104,6 +107,14 @@ async function createDesktopAppMenu(
     pasteItem,
     selectAllItem,
   ] = await Promise.all([
+    MenuItem.new({
+      id: "file-new-mindmap",
+      text: "New Mindmap",
+      accelerator: "CmdOrCtrl+N",
+      action: () => {
+        getDesktopAppMenuRegistry().latestArgs?.onNewMindMap();
+      },
+    }),
     MenuItem.new({
       id: "file-open",
       text: "Open...",
@@ -191,6 +202,7 @@ async function createDesktopAppMenu(
     Submenu.new({
       text: "File",
       items: [
+        newMindMapItem,
         openItem,
         saveItem,
         fileSeparator,
@@ -233,6 +245,7 @@ async function createDesktopAppMenu(
     exportPngItem,
     exportSvgItem,
     menu,
+    newMindMapItem,
     openItem,
     outlineItem,
     redoItem,
@@ -246,6 +259,7 @@ async function syncDesktopAppMenu(
   args: UseDesktopAppMenuArgs,
 ): Promise<void> {
   await Promise.all([
+    menu.newMindMapItem.setEnabled(!args.isFileActionPending),
     menu.openItem.setEnabled(!args.isFileActionPending),
     menu.saveItem.setEnabled(!args.isFileActionPending),
     menu.saveItem.setText(args.currentFileName ? "Save" : "Save As..."),

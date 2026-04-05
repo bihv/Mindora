@@ -154,6 +154,14 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
 
   const handleViewportWheel = useCallback(
     (event: ReactWheelEvent<HTMLDivElement>) => {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest("[data-native-scroll='true']")
+      ) {
+        return;
+      }
+
       event.preventDefault();
       setCamera((current) => ({
         x: current.x + event.deltaX,

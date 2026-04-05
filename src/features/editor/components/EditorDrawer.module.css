@@ -12,14 +12,34 @@
 }
 
 .canvasDrawerLeft {
+  --outline-top-space: 22px;
+  --outline-bottom-space: 22px;
+  top: 0;
   left: 22px;
+  bottom: auto;
+  height: 100vh;
+  min-height: 0;
+  padding-top: var(--outline-top-space);
+  padding-bottom: var(--outline-bottom-space);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   transform: translateX(-18px);
 }
 
 .canvasDrawerRight {
+  --inspector-top-space: 22px;
+  --inspector-bottom-space: 22px;
+  top: 0;
   right: 22px;
-  align-items: center;
+  bottom: auto;
+  height: 100vh;
+  min-height: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-top: var(--inspector-top-space);
+  padding-bottom: var(--inspector-bottom-space);
   overflow-y: auto;
+  overscroll-behavior: contain;
   transform: translateX(18px);
 }
 
@@ -30,7 +50,7 @@
 }
 
 .canvasDrawerLeft.isOpen {
-  padding-top: 52px;
+  padding-top: var(--outline-top-space);
 }
 
 .floatingPanel {
@@ -39,17 +59,20 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 22px;
-  background: rgba(12, 20, 34, 0.8);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(22px);
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(24px);
 }
 
 .floatingPanelInspector {
   width: 312px;
+  margin-top: auto;
+  margin-bottom: auto;
+  flex-shrink: 0;
 }
 
 .floatingPanelSection {
@@ -72,6 +95,16 @@
   padding-bottom: 12px;
 }
 
+.panelDivider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+}
+
 .panelHeader {
   display: flex;
   align-items: center;
@@ -87,6 +120,7 @@
 
 .panelHeader span {
   color: var(--text-secondary);
+  font-size: 0.92rem;
 }
 
 @media (max-width: 1180px) {
@@ -102,10 +136,14 @@
     bottom: 18px;
   }
 
+  .canvasDrawerLeft {
+    --outline-top-space: 18px;
+    --outline-bottom-space: 18px;
+  }
+
   .canvasDrawerRight {
-    top: auto;
-    bottom: 18px;
-    max-height: min(52vh, 460px);
+    --inspector-top-space: 18px;
+    --inspector-bottom-space: 18px;
   }
 }
 
@@ -129,12 +167,16 @@
   }
 
   .canvasDrawerLeft.isOpen {
-    padding-top: 0;
+    padding-top: var(--outline-top-space);
+  }
+
+  .canvasDrawerLeft {
+    --outline-top-space: 126px;
+    --outline-bottom-space: 86px;
   }
 
   .canvasDrawerRight {
-    top: auto;
-    bottom: 86px;
-    max-height: 44vh;
+    --inspector-top-space: 126px;
+    --inspector-bottom-space: 86px;
   }
 }

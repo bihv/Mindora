@@ -265,6 +265,7 @@ function App() {
     isOutlineOpen: editor.isOutlineOpen,
     onAutoLayout: editor.handleAutoLayout,
     onExportFile: editor.handleExportFile,
+    onNewMindMap: editor.handleCreateNewMindMap,
     onOpenFile: editor.handleOpenFile,
     onRedo: editor.redo,
     onSaveFile: editor.handleSaveFile,
@@ -289,6 +290,7 @@ function App() {
       <RecentFilesLauncher
         isFileActionPending={editor.fileState.isPending}
         lastFileActionError={editor.fileState.lastError}
+        onCreateMindMap={editor.handleCreateNewMindMap}
         onOpenFile={() => {
           void editor.handleOpenFile();
         }}
@@ -311,9 +313,6 @@ function App() {
         hasUnsavedFileChanges={editor.hasUnsavedFileChanges}
         isFileActionPending={editor.fileState.isPending}
         lastFileActionError={editor.fileState.lastError}
-        onExportFile={(format) => {
-          void editor.handleExportFile(format);
-        }}
       />
 
       <CanvasStage

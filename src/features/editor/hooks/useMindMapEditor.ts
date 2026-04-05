@@ -32,9 +32,13 @@ type UseMindMapEditorArgs = {
   centerOnNode: (nodeId: string) => boolean;
 };
 
+function createDefaultMindMapDocument(): MindMapDocument {
+  return createBlankMindMap("Focus Map");
+}
+
 export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const [editorState, setEditorState] = useState<EditorState>(() => {
-    const initialDocument = createBlankMindMap("Focus Map");
+    const initialDocument = createDefaultMindMapDocument();
 
     return {
       history: [initialDocument],
@@ -411,6 +415,10 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     [replaceDocument],
   );
 
+  const handleCreateNewMindMap = useCallback(() => {
+    replaceDocument(createDefaultMindMapDocument());
+  }, [replaceDocument]);
+
   const handleSaveFile = useCallback(async () => {
     setFileState((current) => ({
       ...current,
@@ -518,6 +526,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleAddChild,
       handleAddSibling,
       handleAutoLayout,
+      handleCreateNewMindMap,
       handleDeleteSelected,
       handleExportFile,
       handleNodeColorChange,
@@ -551,6 +560,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleAddChild,
       handleAddSibling,
       handleAutoLayout,
+      handleCreateNewMindMap,
       handleDeleteSelected,
       handleExportFile,
       handleNodeColorChange,

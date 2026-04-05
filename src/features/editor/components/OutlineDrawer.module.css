@@ -1,10 +1,7 @@
 .searchField {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
-.searchFieldLabel,
 .outlineItemCount,
 .emptyState {
   color: var(--text-secondary);
@@ -13,9 +10,9 @@
 .searchField input {
   width: 100%;
   padding: 11px 13px;
-  border: 1px solid transparent;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
   outline: none;
   transition:
     border-color 160ms ease,
@@ -39,28 +36,26 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--surface-border);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 4px;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
   transition:
-    transform 160ms ease,
     border-color 160ms ease,
     background 160ms ease;
 }
 
 .outlineItem:hover {
-  transform: translateY(-1px);
-  border-color: var(--surface-border-strong);
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .outlineItemSelected {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .outlineItemMatched {
@@ -68,8 +63,8 @@
 }
 
 .outlineItemDot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
 }
 

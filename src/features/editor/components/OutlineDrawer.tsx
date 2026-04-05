@@ -92,43 +92,37 @@ export function OutlineDrawer({
       ]
         .filter(Boolean)
         .join(" ")}
+      data-native-scroll="true"
       onWheel={(event) => event.stopPropagation()}
     >
       <div className={drawerStyles.floatingPanel}>
-        <div className={drawerStyles.floatingPanelSection}>
-          <div className={drawerStyles.panelHeader}>
-            <h2>Map</h2>
-            <span>{totalNodes} node(s)</span>
-          </div>
-          <label className={styles.searchField}>
-            <span className={styles.searchFieldLabel}>Search</span>
-            <input
-              onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
-              placeholder="Search nodes"
-              value={searchQuery}
-            />
-          </label>
+        <div className={drawerStyles.panelHeader}>
+          <h2>Outline</h2>
+          <span>
+            {totalNodes} node{totalNodes === 1 ? "" : "s"}
+          </span>
         </div>
 
-        <div
-          className={[
-            drawerStyles.floatingPanelSection,
-            drawerStyles.floatingPanelSectionGrow,
-          ].join(" ")}
-        >
-          <div className={drawerStyles.panelHeader}>
-            <h2>Outline</h2>
-            <span>Focus tree</span>
-          </div>
-          <div className={styles.outlineTree}>
-            {searchQuery.trim() && searchMatchesCount === 0 ? (
-              <p className={styles.emptyState}>
-                No matching node in the current map.
-              </p>
-            ) : (
-              renderOutlineTree(mindMap.rootId)
-            )}
-          </div>
+        <label className={styles.searchField}>
+          <input
+            aria-label="Search nodes"
+            onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
+            placeholder="Search nodes"
+            type="search"
+            value={searchQuery}
+          />
+        </label>
+
+        <div className={drawerStyles.panelDivider} />
+
+        <div className={styles.outlineTree}>
+          {searchQuery.trim() && searchMatchesCount === 0 ? (
+            <p className={styles.emptyState}>
+              No matching node in the current map.
+            </p>
+          ) : (
+            renderOutlineTree(mindMap.rootId)
+          )}
         </div>
       </div>
     </aside>

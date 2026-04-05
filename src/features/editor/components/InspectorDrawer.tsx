@@ -28,6 +28,7 @@ export function InspectorDrawer({
         drawerStyles.canvasDrawerRight,
         drawerStyles.isOpen,
       ].join(" ")}
+      data-native-scroll="true"
       onWheel={(event) => event.stopPropagation()}
     >
       <div
@@ -36,69 +37,66 @@ export function InspectorDrawer({
           drawerStyles.floatingPanelInspector,
         ].join(" ")}
       >
-        <div className={drawerStyles.floatingPanelSection}>
-          <div className={drawerStyles.panelHeader}>
-            <h2>Inspector</h2>
-            <span>{selectedNode.parentId === null ? "Root" : "Selected"}</span>
-          </div>
+        <div className={styles.inspectorHeader}>
+          <h2>Inspector</h2>
+          <p>{selectedNode.parentId === null ? "Root node" : "Selected node"}</p>
+        </div>
 
-          <label className={styles.field}>
-            <span>Title</span>
-            <input
-              onChange={(event) => onNodeTitleChange(event.currentTarget.value)}
-              value={selectedNode.title}
-            />
-          </label>
+        <label className={styles.field}>
+          <span>Title</span>
+          <input
+            onChange={(event) => onNodeTitleChange(event.currentTarget.value)}
+            value={selectedNode.title}
+          />
+        </label>
 
-          <label className={styles.field}>
-            <span>Notes</span>
-            <textarea
-              onChange={(event) => onNodeNotesChange(event.currentTarget.value)}
-              placeholder="Optional context"
-              rows={5}
-              value={selectedNode.notes}
-            />
-          </label>
+        <label className={styles.field}>
+          <span>Notes</span>
+          <textarea
+            onChange={(event) => onNodeNotesChange(event.currentTarget.value)}
+            placeholder="Optional context"
+            rows={5}
+            value={selectedNode.notes}
+          />
+        </label>
 
-          <div className={styles.field}>
-            <span>Color</span>
-            <div className={styles.colorGrid}>
-              {(Object.entries(NODE_COLORS) as [
-                NodeColor,
-                (typeof NODE_COLORS)[NodeColor],
-              ][]).map(([colorKey, colorValue]) => (
-                <button
-                  aria-label={colorValue.label}
-                  className={[
-                    styles.colorChip,
-                    selectedNode.color === colorKey ? styles.colorChipActive : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  key={colorKey}
-                  onClick={() => onNodeColorChange(colorKey)}
-                  style={{ background: colorValue.surface }}
-                  type="button"
-                >
-                  <span>{colorValue.label}</span>
-                </button>
-              ))}
-            </div>
+        <div className={styles.field}>
+          <span>Color</span>
+          <div className={styles.colorGrid}>
+            {(Object.entries(NODE_COLORS) as [
+              NodeColor,
+              (typeof NODE_COLORS)[NodeColor],
+            ][]).map(([colorKey, colorValue]) => (
+              <button
+                aria-label={colorValue.label}
+                className={[
+                  styles.colorChip,
+                  selectedNode.color === colorKey ? styles.colorChipActive : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                key={colorKey}
+                onClick={() => onNodeColorChange(colorKey)}
+                type="button"
+              >
+                <span
+                  className={styles.colorChipSwatch}
+                  style={{
+                    background: colorValue.accent,
+                    boxShadow: `0 0 0 6px ${colorValue.glow}`,
+                  }}
+                />
+                <span>{colorValue.label}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        <div
-          className={[
-            drawerStyles.floatingPanelSection,
-            drawerStyles.floatingPanelSectionMeta,
-          ].join(" ")}
-        >
-          <div className={styles.shortcutStrip}>
-            <span>Tab: child</span>
-            <span>Enter: sibling</span>
-            <span>Delete: remove</span>
-          </div>
-        </div>
+        <div className={drawerStyles.panelDivider} />
+
+        <p className={styles.shortcutHint}>
+          Tab adds a child, Enter adds a sibling, and Delete removes the node.
+        </p>
       </div>
     </aside>
   );

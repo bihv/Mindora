@@ -51,20 +51,27 @@
 .actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
 .primaryButton,
+.secondaryButton,
 .recentFileCard {
   border: 1px solid var(--surface-border);
   color: var(--text-primary);
 }
 
-.primaryButton {
+.primaryButton,
+.secondaryButton {
   padding: 12px 18px;
   border-radius: 16px;
-  background: rgba(136, 223, 203, 0.14);
   cursor: pointer;
   transition:
     transform 160ms ease,
@@ -72,13 +79,23 @@
     background 160ms ease;
 }
 
+.primaryButton {
+  background: rgba(136, 223, 203, 0.14);
+}
+
+.secondaryButton {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .primaryButton:hover,
+.secondaryButton:hover,
 .recentFileCard:hover {
   transform: translateY(-1px);
   border-color: var(--surface-border-strong);
 }
 
 .primaryButton:disabled,
+.secondaryButton:disabled,
 .recentFileCard:disabled {
   cursor: wait;
   opacity: 0.65;

@@ -1,3 +1,14 @@
+.inspectorHeader h2 {
+  margin: 0;
+  font-size: 0.98rem;
+  letter-spacing: -0.03em;
+}
+
+.inspectorHeader p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -12,9 +23,9 @@
 .field textarea {
   width: 100%;
   padding: 11px 13px;
-  border: 1px solid transparent;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
   outline: none;
   transition:
     border-color 160ms ease,
@@ -35,50 +46,51 @@
 .colorGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .colorChip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 11px 12px;
-  border: 1px solid var(--surface-border);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
   color: var(--text-primary);
   cursor: pointer;
   text-align: left;
   transition:
-    transform 160ms ease,
     border-color 160ms ease,
     background 160ms ease;
 }
 
 .colorChip:hover {
-  transform: translateY(-1px);
-  border-color: var(--surface-border-strong);
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.colorChip span {
+.colorChipSwatch {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.colorChip span:last-child {
   display: block;
   font-weight: 600;
 }
 
 .colorChipActive {
-  border-color: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.shortcutStrip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.shortcutStrip span {
-  padding: 7px 10px;
-  border: 1px solid var(--surface-border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+.shortcutHint {
+  margin: 0;
   color: var(--text-secondary);
   font-size: 0.8rem;
+  line-height: 1.5;
 }
 
 @media (max-width: 720px) {

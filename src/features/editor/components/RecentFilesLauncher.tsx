@@ -4,6 +4,7 @@ import styles from "./RecentFilesLauncher.module.css";
 type RecentFilesLauncherProps = {
   isFileActionPending: boolean;
   lastFileActionError: string | null;
+  onCreateMindMap: () => void;
   onOpenFile: () => void;
   onOpenRecentFile: (path: string) => void;
   recentFiles: RecentMindMapFile[];
@@ -12,6 +13,7 @@ type RecentFilesLauncherProps = {
 export function RecentFilesLauncher({
   isFileActionPending,
   lastFileActionError,
+  onCreateMindMap,
   onOpenFile,
   onOpenRecentFile,
   recentFiles,
@@ -21,22 +23,32 @@ export function RecentFilesLauncher({
       <section className={styles.panel}>
         <header className={styles.header}>
           <span className={styles.eyebrow}>Mindora</span>
-          <h1>Open a recent map</h1>
+          <h1>Open a recent map or start fresh</h1>
           <p>
-            The app starts with your recent desktop files only. Choose one to load
-            it, or browse for another map on disk.
+            Choose a recent file to load it, start a new mindmap, or browse for
+            another map on disk.
           </p>
         </header>
 
         <div className={styles.actions}>
-          <button
-            className={styles.primaryButton}
-            disabled={isFileActionPending}
-            onClick={onOpenFile}
-            type="button"
-          >
-            {isFileActionPending ? "Opening..." : "Browse files"}
-          </button>
+          <div className={styles.buttonRow}>
+            <button
+              className={styles.primaryButton}
+              disabled={isFileActionPending}
+              onClick={onCreateMindMap}
+              type="button"
+            >
+              New mindmap
+            </button>
+            <button
+              className={styles.secondaryButton}
+              disabled={isFileActionPending}
+              onClick={onOpenFile}
+              type="button"
+            >
+              {isFileActionPending ? "Opening..." : "Browse files"}
+            </button>
+          </div>
           <span className={styles.hint}>Supported: `.mindora.json`, `.json`</span>
         </div>
 
