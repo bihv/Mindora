@@ -1,8 +1,11 @@
 import {
+  LOGIC_CHART_LINE_LAYOUT,
   NODE_COLORS,
+  getMindMapLayoutType,
   getBranchDirection,
   getSubtreeIds,
   type MindMapDocument,
+  type MindMapLayoutType,
   type MindMapNode,
   type NodeColor,
 } from "../../mindmap";
@@ -11,7 +14,7 @@ import {
   NODE_HEIGHT,
   NODE_WIDTH,
 } from "./constants";
-import { createConnectorPath } from "./layout";
+import { createLayoutConnectorPath } from "./layout";
 import type { Position } from "./types";
 import type { ExportFormat } from "./exportTypes";
 
@@ -21,6 +24,7 @@ type ExportSnapshot = {
     path: string;
   }>;
   height: number;
+  layoutType: MindMapLayoutType;
   nodes: Array<{
     node: MindMapNode;
     x: number;
@@ -44,6 +48,9 @@ const FONT_FAMILY = "'SF Pro Display', 'Segoe UI Variable', 'Avenir Next', sans-
 const TITLE_FONT = `600 16px ${FONT_FAMILY}`;
 const NOTES_FONT = `400 13px ${FONT_FAMILY}`;
 const BADGE_FONT = `600 11px ${FONT_FAMILY}`;
+const LOGIC_CHART_FONT_FAMILY = "'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif";
+const LOGIC_CHART_TITLE_FONT = `700 28px ${LOGIC_CHART_FONT_FAMILY}`;
+const LOGIC_CHART_BRANCH_FONT = `600 17px ${LOGIC_CHART_FONT_FAMILY}`;
 
 const EXPORT_NODE_GRADIENTS: Record<NodeColor, NodeGradient> = {
   slate: {
@@ -105,6 +112,7 @@ export async function buildMindMapExportBlob(
 }
 
 function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
+  const layoutType = getMindMapLayoutType(document);
   const nodeIds = getSubtreeIds(document, document.rootId).filter(
     (nodeId) => document.nodes[nodeId],
   );
@@ -126,6 +134,7 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
     return {
       connectors: [],
       height: NODE_HEIGHT + EXPORT_PADDING * 2,
+      layoutType,
       nodes: [],
       width: NODE_WIDTH + EXPORT_PADDING * 2,
     };
@@ -179,7 +188,8 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
 
       return {
         color: NODE_COLORS[node.color].accent,
-        path: createConnectorPath(
+        path: createLayoutConnectorPath(
+          layoutType,
           parentPosition,
           childPosition,
           getBranchDirection(document, nodeId),
@@ -199,12 +209,14 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
   return {
     connectors,
     height: Math.ceil(maxY - minY + EXPORT_PADDING * 2),
+    layoutType,
     nodes,
     width: Math.ceil(maxX - minX + EXPORT_PADDING * 2),
   };
 }
 
 function buildSvgMarkup(snapshot: ExportSnapshot): string {
+  const isLogicChart = snapshot.layoutType === LOGIC_CHART_LINE_LAYOUT;
   const connectorMarkup = snapshot.connectors
     .map(
       (connector) => `
@@ -213,13 +225,24 @@ function buildSvgMarkup(snapshot: ExportSnapshot): string {
           fill="none"
           stroke="${connector.color}"
           stroke-linecap="round"
-          stroke-width="3"
-          stroke-opacity="0.78"
+          stroke-width="${isLogicChart ? 3.4 : 3}"
+          stroke-opacity="${isLogicChart ? 0.9 : 0.78}"
         />
       `,
     )
     .join("");
-  const nodeMarkup = snapshot.nodes.map(buildNodeMarkup).join("");
+  const nodeMarkup = snapshot.nodes
+    .map((snapshotNode) =>
+      snapshot.layoutType === LOGIC_CHART_LINE_LAYOUT
+        ? buildLogicChartNodeMarkup(snapshotNode)
+        : buildMindMapNodeMarkup(snapshotNode),
+    )
+    .join("");
+  const backgroundMarkup = `
+  <rect width="${snapshot.width}" height="${snapshot.height}" fill="url(#mindora-export-bg)" />
+  <rect width="${snapshot.width}" height="${snapshot.height}" fill="url(#mindora-export-glow)" />
+  <rect width="${snapshot.width}" height="${snapshot.height}" fill="url(#mindora-export-grid)" />
+`;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg
@@ -270,9 +293,7 @@ function buildSvgMarkup(snapshot: ExportSnapshot): string {
     ${buildGradientDefs()}
   </defs>
 
-  <rect width="${snapshot.width}" height="${snapshot.height}" fill="url(#mindora-export-bg)" />
-  <rect width="${snapshot.width}" height="${snapshot.height}" fill="url(#mindora-export-glow)" />
-  <rect width="${snapshot.width}" height="${snapshot.height}" fill="url(#mindora-export-grid)" />
+${backgroundMarkup}
 
   <g>
     ${connectorMarkup}
@@ -297,7 +318,7 @@ function buildGradientDefs(): string {
     .join("");
 }
 
-function buildNodeMarkup(snapshotNode: ExportSnapshot["nodes"][number]): string {
+function buildMindMapNodeMarkup(snapshotNode: ExportSnapshot["nodes"][number]): string {
   const { node, x, y } = snapshotNode;
   const hasChildren = node.childrenIds.length > 0;
   const titleWidth = NODE_WIDTH - 36 - (hasChildren ? 60 : 0);
@@ -350,6 +371,52 @@ function buildNodeMarkup(snapshotNode: ExportSnapshot["nodes"][number]): string 
       ${titleMarkup}
       ${notesMarkup}
       ${hasChildren ? buildNodeBadgeMarkup(node) : ""}
+    </g>
+  `;
+}
+
+function buildLogicChartNodeMarkup(
+  snapshotNode: ExportSnapshot["nodes"][number],
+): string {
+  const { node, x, y } = snapshotNode;
+  const title = escapeXml(node.title.trim() || "Untitled Node");
+  const isRoot = node.parentId === null;
+  const accent = NODE_COLORS[node.color].accent;
+  const font = isRoot ? LOGIC_CHART_TITLE_FONT : LOGIC_CHART_BRANCH_FONT;
+  const titleWidth = Math.min(
+    measureTextWidth(node.title.trim() || "Untitled Node", font),
+    NODE_WIDTH - 20,
+  );
+  const textX = 0;
+  const textY = isRoot ? 42 : 38;
+  const lineStartX = Math.min(titleWidth + 18, NODE_WIDTH - 24);
+
+  return `
+    <g transform="translate(${x} ${y})">
+      <text
+        fill="${isRoot ? "#ffffff" : "#f5f7ff"}"
+        font-family="${LOGIC_CHART_FONT_FAMILY}"
+        font-size="${isRoot ? 30 : 18}"
+        font-weight="${isRoot ? 700 : 600}"
+        x="${textX}"
+        y="${textY}"
+      >${title}</text>
+      ${
+        isRoot
+          ? ""
+          : `
+      <line
+        stroke="${accent}"
+        stroke-linecap="round"
+        stroke-opacity="0.92"
+        stroke-width="3.4"
+        x1="${lineStartX}"
+        x2="${NODE_WIDTH}"
+        y1="${textY + 6}"
+        y2="${textY + 6}"
+      />
+      `
+      }
     </g>
   `;
 }

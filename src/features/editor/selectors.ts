@@ -8,7 +8,7 @@ import {
   NODE_WIDTH,
 } from "./constants";
 import {
-  createConnectorPath,
+  createLayoutConnectorPath,
   getConnectorFocusState,
 } from "./layout";
 import type {
@@ -22,9 +22,11 @@ import type {
 } from "./types";
 import {
   NODE_COLORS,
+  getMindMapLayoutType,
   getBranchDirection,
   getSubtreeIds,
   type MindMapDocument,
+  type MindMapLayoutType,
 } from "../../mindmap";
 
 export function buildRenderPositions(
@@ -192,6 +194,7 @@ export function buildOutlineSearchVisibleSet(
 
 export function buildConnectors(
   document: MindMapDocument,
+  layoutType: MindMapLayoutType,
   visibleNodeIds: string[],
   visibleNodeIdSet: Set<string>,
   stagePositions: Record<string, Position>,
@@ -222,7 +225,8 @@ export function buildConnectors(
         id: node.id,
         color: NODE_COLORS[node.color].accent,
         focusState,
-        path: createConnectorPath(
+        path: createLayoutConnectorPath(
+          layoutType,
           parentPosition,
           childPosition,
           direction,
@@ -258,10 +262,11 @@ export function buildMinimapData({
   visibleNodeIdSet,
   visibleNodeIds,
 }: BuildMinimapDataParams): MinimapData {
-  let minX = camera.x;
-  let minY = camera.y;
-  let maxX = camera.x + canvasWidth;
-  let maxY = camera.y + canvasHeight;
+  const layoutType = getMindMapLayoutType(document);
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
 
   for (const nodeId of visibleNodeIds) {
     const position = renderPositions[nodeId];
@@ -273,6 +278,13 @@ export function buildMinimapData({
     minY = Math.min(minY, position.y);
     maxX = Math.max(maxX, position.x + NODE_WIDTH);
     maxY = Math.max(maxY, position.y + NODE_HEIGHT);
+  }
+
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+    minX = camera.x;
+    minY = camera.y;
+    maxX = camera.x + canvasWidth;
+    maxY = camera.y + canvasHeight;
   }
 
   minX -= MINIMAP_WORLD_PADDING;
@@ -344,7 +356,8 @@ export function buildMinimapData({
       return {
         id: nodeId,
         focusState,
-        path: createConnectorPath(
+        path: createLayoutConnectorPath(
+          layoutType,
           scaledParentPosition,
           scaledChildPosition,
           direction,

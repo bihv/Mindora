@@ -38,6 +38,46 @@
   font-size: 0.74rem;
 }
 
+.actionPill {
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.actionLabel {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.actionButton {
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.actionButton:hover {
+  border-color: var(--surface-border-strong);
+  background: rgba(136, 223, 203, 0.14);
+  transform: translateY(-1px);
+}
+
+.actionButton:focus-visible {
+  outline: 2px solid rgba(136, 223, 203, 0.42);
+  outline-offset: 2px;
+}
+
 .statusPillError span,
 .statusPillError strong {
   color: #ffb4a8;

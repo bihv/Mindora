@@ -1,13 +1,19 @@
 import { useCallback, useMemo, useState } from "react";
 import {
+  LOGIC_CHART_LINE_LAYOUT,
+  MINDMAP_CARD_LAYOUT,
   cloneMindMapDocument,
   createBlankMindMap,
   createChildNode,
   createSiblingNode,
   deleteNode,
+  getMindMapLayoutType,
   resolveSelectedNodeId,
+  setMindMapLayoutType,
+  syncClassicRootBranchDirections,
   updateNodePosition,
   type MindMapDocument,
+  type MindMapLayoutType,
   type NodeColor,
 } from "../../../mindmap";
 import { HISTORY_LIMIT } from "../constants";
@@ -20,7 +26,7 @@ import {
   serializeMindMapDocument,
 } from "../filePersistence";
 import { buildMindMapExportBlob } from "../export";
-import { buildAutoLayoutPositions } from "../layout";
+import { buildLayoutPositions } from "../layout";
 import { EXPORT_FORMAT_LABELS, type ExportFormat } from "../exportTypes";
 import type {
   EditorFileState,
@@ -61,8 +67,10 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   });
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [isLayoutDialogOpen, setIsLayoutDialogOpen] = useState(false);
 
   const mindMap = editorState.history[editorState.historyIndex];
+  const layoutType = getMindMapLayoutType(mindMap);
   const selectedNodeId = resolveSelectedNodeId(mindMap, editorState.selectedNodeId);
   const hasActiveSelection = editorState.hasActiveSelection;
   const selectedNode = mindMap.nodes[selectedNodeId];
@@ -94,6 +102,25 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       });
     },
     [],
+  );
+
+  const applyLayoutToDocument = useCallback(
+    (draft: MindMapDocument, nextLayoutType: MindMapLayoutType) => {
+      updateNodePosition(draft, buildLayoutPositions(draft, nextLayoutType));
+    },
+    [],
+  );
+
+  const applyLogicChartLayoutIfNeeded = useCallback(
+    (draft: MindMapDocument) => {
+      const nextLayoutType = getMindMapLayoutType(draft);
+      if (nextLayoutType !== LOGIC_CHART_LINE_LAYOUT) {
+        return;
+      }
+
+      applyLayoutToDocument(draft, nextLayoutType);
+    },
+    [applyLayoutToDocument],
   );
 
   const selectNode = useCallback(
@@ -196,6 +223,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
 
       commitDocument((draft) => {
         const result = createChildNode(draft, parentId);
+        applyLogicChartLayoutIfNeeded(draft);
         createdNodeId = result.nodeId;
         return { selectedNodeId: result.nodeId };
       });
@@ -205,7 +233,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       });
       setIsInspectorOpen(true);
     },
-    [centerOnNode, commitDocument],
+    [applyLogicChartLayoutIfNeeded, centerOnNode, commitDocument],
   );
 
   const handleAddSibling = useCallback(
@@ -214,6 +242,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
 
       commitDocument((draft) => {
         const result = createSiblingNode(draft, nodeId);
+        applyLogicChartLayoutIfNeeded(draft);
         createdNodeId = result.nodeId;
         return { selectedNodeId: result.nodeId };
       });
@@ -223,7 +252,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       });
       setIsInspectorOpen(true);
     },
-    [centerOnNode, commitDocument],
+    [applyLogicChartLayoutIfNeeded, centerOnNode, commitDocument],
   );
 
   const handleDeleteSelected = useCallback(() => {
@@ -231,18 +260,63 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       return;
     }
 
-    commitDocument((draft) => deleteNode(draft, selectedNodeId));
-  }, [commitDocument, hasActiveSelection, selectedNode.parentId, selectedNodeId]);
+    commitDocument((draft) => {
+      const result = deleteNode(draft, selectedNodeId);
+      applyLogicChartLayoutIfNeeded(draft);
+      return result;
+    });
+  }, [
+    applyLogicChartLayoutIfNeeded,
+    commitDocument,
+    hasActiveSelection,
+    selectedNode.parentId,
+    selectedNodeId,
+  ]);
 
   const handleAutoLayout = useCallback(() => {
     commitDocument((draft) => {
-      updateNodePosition(draft, buildAutoLayoutPositions(draft));
+      applyLayoutToDocument(draft, getMindMapLayoutType(draft));
     });
     closeNodeMenu();
     requestAnimationFrame(() => {
       centerOnNode(selectedNodeId);
     });
-  }, [centerOnNode, closeNodeMenu, commitDocument, selectedNodeId]);
+  }, [
+    applyLayoutToDocument,
+    centerOnNode,
+    closeNodeMenu,
+    commitDocument,
+    selectedNodeId,
+  ]);
+
+  const handleLayoutTypeChange = useCallback(
+    (nextLayoutType: MindMapLayoutType) => {
+      if (nextLayoutType === layoutType) {
+        return;
+      }
+
+      commitDocument((draft) => {
+        if (layoutType === MINDMAP_CARD_LAYOUT) {
+          syncClassicRootBranchDirections(draft);
+        }
+
+        setMindMapLayoutType(draft, nextLayoutType);
+        applyLayoutToDocument(draft, nextLayoutType);
+      });
+      closeNodeMenu();
+      requestAnimationFrame(() => {
+        centerOnNode(selectedNodeId);
+      });
+    },
+    [
+      applyLayoutToDocument,
+      centerOnNode,
+      closeNodeMenu,
+      commitDocument,
+      layoutType,
+      selectedNodeId,
+    ],
+  );
 
   const handleNodeTitleChange = useCallback(
     (nodeId: string, value: string) => {
@@ -346,6 +420,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       }));
       setIsOutlineOpen(false);
       setIsInspectorOpen(false);
+      setIsLayoutDialogOpen(false);
 
       requestAnimationFrame(() => {
         centerOnNode(nextSelectedNodeId);
@@ -508,6 +583,14 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     setIsOutlineOpen((current) => !current);
   }, []);
 
+  const openLayoutDialog = useCallback(() => {
+    setIsLayoutDialogOpen(true);
+  }, []);
+
+  const closeLayoutDialog = useCallback(() => {
+    setIsLayoutDialogOpen(false);
+  }, []);
+
   const hasUnsavedFileChanges = useMemo(() => {
     if (fileState.lastSavedSnapshot === null) {
       return false;
@@ -520,6 +603,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     () => ({
       clearSelection,
       closeNodeMenu,
+      closeLayoutDialog,
       commitDocument,
       editorState,
       fileState,
@@ -529,6 +613,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleCreateNewMindMap,
       handleDeleteSelected,
       handleExportFile,
+      handleLayoutTypeChange,
       handleNodeColorChange,
       handleNodeNotesChange,
       handleOpenFile,
@@ -539,8 +624,11 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       hasActiveSelection,
       hasUnsavedFileChanges,
       isInspectorOpen,
+      isLayoutDialogOpen,
       isOutlineOpen,
+      layoutType,
       mindMap,
+      openLayoutDialog,
       redo,
       selectNode,
       selectedNode,
@@ -554,6 +642,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     [
       clearSelection,
       closeNodeMenu,
+      closeLayoutDialog,
       commitDocument,
       editorState,
       fileState,
@@ -563,6 +652,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleCreateNewMindMap,
       handleDeleteSelected,
       handleExportFile,
+      handleLayoutTypeChange,
       handleNodeColorChange,
       handleNodeNotesChange,
       handleOpenFile,
@@ -573,8 +663,11 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       hasActiveSelection,
       hasUnsavedFileChanges,
       isInspectorOpen,
+      isLayoutDialogOpen,
       isOutlineOpen,
+      layoutType,
       mindMap,
+      openLayoutDialog,
       redo,
       selectNode,
       selectedNode,

@@ -17,6 +17,7 @@ type UseDesktopAppMenuArgs = {
   isOutlineOpen: boolean;
   onAutoLayout: () => void;
   onExportFile: (format: ExportFormat) => Promise<void> | void;
+  onOpenLayoutDialog: () => void;
   onNewMindMap: () => void;
   onOpenFile: () => Promise<void> | void;
   onRedo: () => void;
@@ -30,6 +31,7 @@ type DesktopAppMenu = {
   exportPdfItem: MenuItem;
   exportPngItem: MenuItem;
   exportSvgItem: MenuItem;
+  mindMapTypeItem: MenuItem;
   menu: Menu;
   newMindMapItem: MenuItem;
   openItem: MenuItem;
@@ -97,10 +99,12 @@ async function createDesktopAppMenu(
     undoItem,
     redoItem,
     outlineItem,
+    mindMapTypeItem,
     autoLayoutItem,
     fileSeparator,
     exportSeparator,
     editSeparator,
+    layoutSeparator,
     closeWindowItem,
     cutItem,
     copyItem,
@@ -177,12 +181,20 @@ async function createDesktopAppMenu(
       },
     }),
     MenuItem.new({
+      id: "layout-mindmap-type",
+      text: "Mindmap Type...",
+      action: () => {
+        getDesktopAppMenuRegistry().latestArgs?.onOpenLayoutDialog();
+      },
+    }),
+    MenuItem.new({
       id: "layout-auto",
       text: "Auto Layout",
       action: () => {
         getDesktopAppMenuRegistry().latestArgs?.onAutoLayout();
       },
     }),
+    PredefinedMenuItem.new({ item: "Separator" }),
     PredefinedMenuItem.new({ item: "Separator" }),
     PredefinedMenuItem.new({ item: "Separator" }),
     PredefinedMenuItem.new({ item: "Separator" }),
@@ -229,7 +241,7 @@ async function createDesktopAppMenu(
     }),
     Submenu.new({
       text: "Layout",
-      items: [autoLayoutItem],
+      items: [mindMapTypeItem, layoutSeparator, autoLayoutItem],
     }),
   ]);
 
@@ -244,6 +256,7 @@ async function createDesktopAppMenu(
     exportPdfItem,
     exportPngItem,
     exportSvgItem,
+    mindMapTypeItem,
     menu,
     newMindMapItem,
     openItem,
@@ -266,10 +279,11 @@ async function syncDesktopAppMenu(
     menu.exportPngItem.setEnabled(!args.isFileActionPending),
     menu.exportSvgItem.setEnabled(!args.isFileActionPending),
     menu.exportPdfItem.setEnabled(!args.isFileActionPending),
+    menu.mindMapTypeItem.setEnabled(!args.isFileActionPending),
     menu.undoItem.setEnabled(args.canUndo),
     menu.redoItem.setEnabled(args.canRedo),
     menu.outlineItem.setChecked(args.isOutlineOpen),
-    menu.autoLayoutItem.setEnabled(true),
+    menu.autoLayoutItem.setEnabled(!args.isFileActionPending),
   ]);
 }
 

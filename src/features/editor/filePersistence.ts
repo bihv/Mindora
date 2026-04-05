@@ -1,6 +1,7 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import {
+  hydrateMindMapDocument,
   isMindMapDocument,
   type MindMapDocument,
 } from "../../mindmap";
@@ -83,7 +84,7 @@ const FILE_TYPES = [
 ] satisfies PickerFileType[];
 
 export function serializeMindMapDocument(document: MindMapDocument): string {
-  return JSON.stringify(document, null, 2);
+  return JSON.stringify(hydrateMindMapDocument(document), null, 2);
 }
 
 export async function openMindMapFile(): Promise<OpenMindMapFileResult | null> {
@@ -105,10 +106,11 @@ export async function openMindMapFile(): Promise<OpenMindMapFileResult | null> {
 
     const file = await fileHandle.getFile();
     const contents = await file.text();
+    const document = parseMindMapDocument(contents);
 
     return {
-      contents,
-      document: parseMindMapDocument(contents),
+      contents: serializeMindMapDocument(document),
+      document,
       fileHandle,
       fileName: file.name,
     };
@@ -120,9 +122,10 @@ export async function openMindMapFile(): Promise<OpenMindMapFileResult | null> {
   }
 
   const contents = await file.text();
+  const document = parseMindMapDocument(contents);
   return {
-    contents,
-    document: parseMindMapDocument(contents),
+    contents: serializeMindMapDocument(document),
+    document,
     fileHandle: null,
     fileName: file.name,
   };
@@ -263,7 +266,7 @@ function parseMindMapDocument(contents: string): MindMapDocument {
     throw new Error("File does not contain a valid Mindora map.");
   }
 
-  return parsed;
+  return hydrateMindMapDocument(parsed);
 }
 
 function buildMindMapFileStem(title: string): string {
@@ -475,7 +478,7 @@ async function readMindMapFileDesktop(
   rememberRecentMindMapFile(path);
 
   return {
-    contents,
+    contents: serializeMindMapDocument(document),
     document,
     fileHandle: path,
     fileName: getFileNameFromPath(path),

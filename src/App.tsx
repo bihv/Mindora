@@ -8,6 +8,8 @@ import "./App.css";
 import appStyles from "./App.module.css";
 import { getVisibleNodeIds } from "./mindmap";
 import {
+  MINIMAP_HEIGHT,
+  MINIMAP_WIDTH,
   MIN_CANVAS_HEIGHT,
   MIN_CANVAS_WIDTH,
   NODE_CONTEXT_MENU_GAP,
@@ -29,6 +31,7 @@ import { clamp } from "./features/editor/utils";
 import { CanvasStage } from "./features/editor/components/CanvasStage";
 import { DocumentStatus } from "./features/editor/components/DocumentStatus";
 import { InspectorDrawer } from "./features/editor/components/InspectorDrawer";
+import { MindMapTypeDialog } from "./features/editor/components/MindMapTypeDialog";
 import { MindMapMinimap } from "./features/editor/components/MindMapMinimap";
 import { NodeContextMenu } from "./features/editor/components/NodeContextMenu";
 import { OutlineDrawer } from "./features/editor/components/OutlineDrawer";
@@ -150,12 +153,20 @@ function App() {
     () =>
       buildConnectors(
         editor.mindMap,
+        editor.layoutType,
         visibleNodeIds,
         visibleNodeIdSet,
         stagePositions,
         nodeFocusStates,
       ),
-    [editor.mindMap, nodeFocusStates, stagePositions, visibleNodeIdSet, visibleNodeIds],
+    [
+      editor.layoutType,
+      editor.mindMap,
+      nodeFocusStates,
+      stagePositions,
+      visibleNodeIdSet,
+      visibleNodeIds,
+    ],
   );
   const minimap = useMemo(
     () =>
@@ -193,8 +204,20 @@ function App() {
       }
 
       const rect = minimapElement.getBoundingClientRect();
-      const localX = clamp(clientX - rect.left, 0, rect.width);
-      const localY = clamp(clientY - rect.top, 0, rect.height);
+      if (rect.width <= 0 || rect.height <= 0) {
+        return;
+      }
+
+      const localX = clamp(
+        ((clientX - rect.left) / rect.width) * MINIMAP_WIDTH,
+        0,
+        MINIMAP_WIDTH,
+      );
+      const localY = clamp(
+        ((clientY - rect.top) / rect.height) * MINIMAP_HEIGHT,
+        0,
+        MINIMAP_HEIGHT,
+      );
       const minimapX = clamp(
         localX,
         minimap.offsetX,
@@ -257,7 +280,7 @@ function App() {
     undo: editor.undo,
   });
 
-  useDesktopAppMenu({
+  const desktopMenuEnabled = useDesktopAppMenu({
     canRedo: editor.editorState.historyIndex < editor.editorState.history.length - 1,
     canUndo: editor.editorState.historyIndex > 0,
     currentFileName: editor.fileState.currentFileName,
@@ -265,6 +288,7 @@ function App() {
     isOutlineOpen: editor.isOutlineOpen,
     onAutoLayout: editor.handleAutoLayout,
     onExportFile: editor.handleExportFile,
+    onOpenLayoutDialog: editor.openLayoutDialog,
     onNewMindMap: editor.handleCreateNewMindMap,
     onOpenFile: editor.handleOpenFile,
     onRedo: editor.redo,
@@ -313,6 +337,8 @@ function App() {
         hasUnsavedFileChanges={editor.hasUnsavedFileChanges}
         isFileActionPending={editor.fileState.isPending}
         lastFileActionError={editor.fileState.lastError}
+        onOpenLayoutDialog={editor.openLayoutDialog}
+        showLayoutAction={!desktopMenuEnabled}
       />
 
       <CanvasStage
@@ -320,6 +346,7 @@ function App() {
         connectors={connectors}
         draggingNodeId={draggingState.dragging?.nodeId ?? null}
         hasActiveSelection={editor.hasActiveSelection}
+        layoutType={editor.layoutType}
         mindMap={editor.mindMap}
         nodeFocusStates={nodeFocusStates}
         onCanvasClick={editor.clearSelection}
@@ -403,6 +430,13 @@ function App() {
           onPointerDown={handleMinimapPointerDown}
         />
       ) : null}
+
+      <MindMapTypeDialog
+        currentLayoutType={editor.layoutType}
+        isOpen={editor.isLayoutDialogOpen}
+        onApply={editor.handleLayoutTypeChange}
+        onClose={editor.closeLayoutDialog}
+      />
     </div>
   );
 }

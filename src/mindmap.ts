@@ -1,10 +1,18 @@
 export type NodeColor = "slate" | "teal" | "amber" | "coral" | "violet";
+export const MINDMAP_CARD_LAYOUT = "mindmap-card";
+export const LOGIC_CHART_LINE_LAYOUT = "logic-chart-line";
+export const MINDMAP_LAYOUT_TYPES = [
+  MINDMAP_CARD_LAYOUT,
+  LOGIC_CHART_LINE_LAYOUT,
+] as const;
+export type MindMapLayoutType = (typeof MINDMAP_LAYOUT_TYPES)[number];
 
 export type MindMapNode = {
   id: string;
   title: string;
   notes: string;
   color: NodeColor;
+  classicDirection?: -1 | 1;
   x: number;
   y: number;
   parentId: string | null;
@@ -17,6 +25,7 @@ export type MindMapDocument = {
   title: string;
   rootId: string;
   nodes: Record<string, MindMapNode>;
+  layoutType?: MindMapLayoutType;
 };
 
 export type MindMapTemplate = {
@@ -28,6 +37,7 @@ export type MindMapTemplate = {
 
 export const STORAGE_KEY = "mindora:mvp-document";
 export const TEMPLATE_KEY = "mindora:active-template";
+export const DEFAULT_MINDMAP_LAYOUT_TYPE: MindMapLayoutType = MINDMAP_CARD_LAYOUT;
 
 export const NODE_COLORS: Record<
   NodeColor,
@@ -79,6 +89,7 @@ export function createMindMapNode(
     title: params.title,
     notes: params.notes ?? "",
     color: params.color,
+    classicDirection: params.classicDirection,
     x: params.x,
     y: params.y,
     parentId: params.parentId,
@@ -100,6 +111,7 @@ export function createBlankMindMap(title = "Focus Map"): MindMapDocument {
     id: createId(),
     title,
     rootId: rootNode.id,
+    layoutType: DEFAULT_MINDMAP_LAYOUT_TYPE,
     nodes: {
       [rootNode.id]: rootNode,
     },
@@ -111,6 +123,7 @@ export function cloneMindMapDocument(
 ): MindMapDocument {
   return {
     ...document,
+    layoutType: getMindMapLayoutType(document),
     nodes: Object.fromEntries(
       Object.entries(document.nodes).map(([id, node]) => [
         id,
@@ -120,6 +133,37 @@ export function cloneMindMapDocument(
         },
       ]),
     ),
+  };
+}
+
+export function getMindMapLayoutType(
+  document: MindMapDocument,
+): MindMapLayoutType {
+  return isMindMapLayoutType(document.layoutType)
+    ? document.layoutType
+    : DEFAULT_MINDMAP_LAYOUT_TYPE;
+}
+
+export function setMindMapLayoutType(
+  document: MindMapDocument,
+  layoutType: MindMapLayoutType,
+): MindMapDocument {
+  document.layoutType = layoutType;
+  return document;
+}
+
+export function hydrateMindMapDocument(
+  document: MindMapDocument,
+): MindMapDocument {
+  const layoutType = getMindMapLayoutType(document);
+
+  if (document.layoutType === layoutType) {
+    return document;
+  }
+
+  return {
+    ...document,
+    layoutType,
   };
 }
 
@@ -221,6 +265,7 @@ export function createChildNode(
 
   const newNode = createMindMapNode({
     title,
+    classicDirection: parent.parentId === null ? direction : undefined,
     x: parent.x + direction * HORIZONTAL_GAP,
     y:
       parent.parentId === null
@@ -268,6 +313,72 @@ export function updateNodePosition(
       y: position.y,
     };
   }
+
+  if (getMindMapLayoutType(document) === MINDMAP_CARD_LAYOUT) {
+    syncClassicRootBranchDirections(document);
+  }
+
+  return document;
+}
+
+export function getClassicRootBranchDirection(
+  document: MindMapDocument,
+  childId: string,
+  index: number,
+): -1 | 1 {
+  const rootNode = document.nodes[document.rootId];
+  const childNode = document.nodes[childId];
+
+  if (!rootNode || !childNode) {
+    return index % 2 === 0 ? 1 : -1;
+  }
+
+  if (childNode.classicDirection === -1 || childNode.classicDirection === 1) {
+    return childNode.classicDirection;
+  }
+
+  if (childNode.x < rootNode.x) {
+    return -1;
+  }
+
+  if (childNode.x > rootNode.x) {
+    return 1;
+  }
+
+  return index % 2 === 0 ? 1 : -1;
+}
+
+export function syncClassicRootBranchDirections(
+  document: MindMapDocument,
+): MindMapDocument {
+  const rootNode = document.nodes[document.rootId];
+
+  if (!rootNode) {
+    return document;
+  }
+
+  rootNode.childrenIds.forEach((childId, index) => {
+    const childNode = document.nodes[childId];
+    if (!childNode) {
+      return;
+    }
+
+    const classicDirection =
+      childNode.x < rootNode.x
+        ? -1
+        : childNode.x > rootNode.x
+          ? 1
+          : (childNode.classicDirection ?? (index % 2 === 0 ? 1 : -1));
+
+    if (childNode.classicDirection === classicDirection) {
+      return;
+    }
+
+    document.nodes[childId] = {
+      ...childNode,
+      classicDirection,
+    };
+  });
 
   return document;
 }
@@ -376,6 +487,13 @@ export function isMindMapDocument(value: unknown): value is MindMapDocument {
   return Object.values(document.nodes).every(isMindMapNode);
 }
 
+function isMindMapLayoutType(value: unknown): value is MindMapLayoutType {
+  return (
+    typeof value === "string" &&
+    MINDMAP_LAYOUT_TYPES.includes(value as MindMapLayoutType)
+  );
+}
+
 function isMindMapNode(value: unknown): value is MindMapNode {
   if (!value || typeof value !== "object") {
     return false;
@@ -387,6 +505,9 @@ function isMindMapNode(value: unknown): value is MindMapNode {
     typeof node.title === "string" &&
     typeof node.notes === "string" &&
     typeof node.color === "string" &&
+    (node.classicDirection === undefined ||
+      node.classicDirection === -1 ||
+      node.classicDirection === 1) &&
     typeof node.x === "number" &&
     typeof node.y === "number" &&
     (typeof node.parentId === "string" || node.parentId === null) &&

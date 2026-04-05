@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type RefCallback,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
@@ -27,18 +28,20 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
     cameraOrigin: CameraState;
   } | null>(null);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  const [viewportElement, setViewportElement] = useState<HTMLDivElement | null>(null);
 
-  const viewportRef = useRef<HTMLDivElement | null>(null);
   const hasCenteredRootRef = useRef(false);
   const latestDocumentRef = useRef<MindMapDocument | null>(null);
+  const viewportRef = useCallback<RefCallback<HTMLDivElement>>((node) => {
+    setViewportElement(node);
+  }, []);
 
   const centerOnNode = useCallback(
     (nodeId: string) => {
       const document = latestDocumentRef.current;
       const node = document?.nodes[nodeId];
-      const viewport = viewportRef.current;
-      const width = Math.max(viewport?.clientWidth ?? viewportSize.width, 0);
-      const height = Math.max(viewport?.clientHeight ?? viewportSize.height, 0);
+      const width = Math.max(viewportElement?.clientWidth ?? viewportSize.width, 0);
+      const height = Math.max(viewportElement?.clientHeight ?? viewportSize.height, 0);
 
       if (!node || width <= 0 || height <= 0) {
         return false;
@@ -51,31 +54,31 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
 
       return true;
     },
-    [viewportSize.height, viewportSize.width],
+    [viewportElement, viewportSize.height, viewportSize.width],
   );
 
   useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) {
+    if (!viewportElement) {
+      setViewportSize({ width: 0, height: 0 });
       return;
     }
 
     const updateViewportSize = () => {
       setViewportSize({
-        width: viewport.clientWidth,
-        height: viewport.clientHeight,
+        width: viewportElement.clientWidth,
+        height: viewportElement.clientHeight,
       });
     };
 
     updateViewportSize();
 
     const observer = new ResizeObserver(updateViewportSize);
-    observer.observe(viewport);
+    observer.observe(viewportElement);
 
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [viewportElement]);
 
   useEffect(() => {
     if (hasCenteredRootRef.current || viewportSize.width === 0 || viewportSize.height === 0) {

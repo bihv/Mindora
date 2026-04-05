@@ -10,12 +10,32 @@ import type {
   NodeFocusState,
   Position,
 } from "./types";
-import type { MindMapDocument } from "../../mindmap";
+import {
+  LOGIC_CHART_LINE_LAYOUT,
+  getClassicRootBranchDirection,
+  type MindMapDocument,
+  type MindMapLayoutType,
+} from "../../mindmap";
 
 type AutoLayoutResult = {
   positions: Record<string, Position>;
   topContour: Array<number | undefined>;
   bottomContour: Array<number | undefined>;
+};
+
+type TreeLayoutConfig = {
+  horizontalGap: number;
+  verticalGap: number;
+};
+
+const CLASSIC_LAYOUT_CONFIG: TreeLayoutConfig = {
+  horizontalGap: AUTO_LAYOUT_HORIZONTAL_GAP,
+  verticalGap: AUTO_LAYOUT_VERTICAL_GAP,
+};
+
+const LOGIC_CHART_LAYOUT_CONFIG: TreeLayoutConfig = {
+  horizontalGap: 320,
+  verticalGap: 10,
 };
 
 export function getConnectorPoints(
@@ -66,6 +86,36 @@ export function createConnectorPath(
   } ${endY}, ${endX} ${endY}`;
 }
 
+export function createLayoutConnectorPath(
+  layoutType: MindMapLayoutType,
+  parentPosition: Position,
+  childPosition: Position,
+  direction: -1 | 1,
+  minimumCurveOffset = CONNECTOR_CURVE_OFFSET,
+  parentSize?: { width: number; height: number },
+  childSize?: { width: number; height: number },
+) {
+  if (layoutType === LOGIC_CHART_LINE_LAYOUT) {
+    return createLogicChartConnectorPath(
+      parentPosition,
+      childPosition,
+      direction,
+      minimumCurveOffset,
+      parentSize,
+      childSize,
+    );
+  }
+
+  return createConnectorPath(
+    parentPosition,
+    childPosition,
+    direction,
+    minimumCurveOffset,
+    parentSize,
+    childSize,
+  );
+}
+
 export function getConnectorFocusState(
   parentFocusState: NodeFocusState,
   childFocusState: NodeFocusState,
@@ -90,6 +140,21 @@ export function getConnectorFocusState(
 export function buildAutoLayoutPositions(
   document: MindMapDocument,
 ): Record<string, Position> {
+  return buildMindMapLayoutPositions(document);
+}
+
+export function buildLayoutPositions(
+  document: MindMapDocument,
+  layoutType: MindMapLayoutType,
+): Record<string, Position> {
+  return layoutType === LOGIC_CHART_LINE_LAYOUT
+    ? buildLogicChartLayoutPositions(document)
+    : buildMindMapLayoutPositions(document);
+}
+
+export function buildMindMapLayoutPositions(
+  document: MindMapDocument,
+): Record<string, Position> {
   const positions = Object.fromEntries(
     Object.values(document.nodes).map((node) => [node.id, { x: node.x, y: node.y }]),
   ) as Record<string, Position>;
@@ -110,21 +175,14 @@ export function buildAutoLayoutPositions(
       return;
     }
 
-    if (childNode.x < rootNode.x) {
+    const direction = getClassicRootBranchDirection(document, childId, index);
+
+    if (direction === -1) {
       leftChildren.push(childId);
       return;
     }
 
-    if (childNode.x > rootNode.x) {
-      rightChildren.push(childId);
-      return;
-    }
-
-    if (index % 2 === 0) {
-      rightChildren.push(childId);
-    } else {
-      leftChildren.push(childId);
-    }
+    rightChildren.push(childId);
   });
 
   const layoutRootSide = (childIds: string[], direction: -1 | 1) => {
@@ -135,18 +193,30 @@ export function buildAutoLayoutPositions(
           return null;
         }
 
-        return buildDirectedTreeLayout(document, childId, direction);
+        return buildDirectedTreeLayout(
+          document,
+          childId,
+          direction,
+          CLASSIC_LAYOUT_CONFIG,
+        );
       })
       .filter((layout): layout is AutoLayoutResult => layout !== null);
 
-    const offsets = stackAutoLayoutSiblings(layouts, 1);
+    const offsets = stackAutoLayoutSiblings(
+      layouts,
+      1,
+      CLASSIC_LAYOUT_CONFIG.verticalGap,
+    );
 
     layouts.forEach((layout, index) => {
       const offsetY = offsets[index] ?? 0;
 
       Object.entries(layout.positions).forEach(([nodeId, position]) => {
         positions[nodeId] = {
-          x: rootNode.x + direction * AUTO_LAYOUT_HORIZONTAL_GAP + position.x,
+          x:
+            rootNode.x +
+            direction * CLASSIC_LAYOUT_CONFIG.horizontalGap +
+            position.x,
           y: rootCenterY + offsetY + position.y - NODE_HEIGHT / 2,
         };
       });
@@ -159,10 +229,59 @@ export function buildAutoLayoutPositions(
   return positions;
 }
 
+export function buildLogicChartLayoutPositions(
+  document: MindMapDocument,
+): Record<string, Position> {
+  const positions = Object.fromEntries(
+    Object.values(document.nodes).map((node) => [node.id, { x: node.x, y: node.y }]),
+  ) as Record<string, Position>;
+  const rootNode = document.nodes[document.rootId];
+
+  if (!rootNode) {
+    return positions;
+  }
+
+  positions[rootNode.id] = { x: rootNode.x, y: rootNode.y };
+  const rootCenterY = rootNode.y + NODE_HEIGHT / 2;
+  const layouts = rootNode.childrenIds
+    .map((childId) => {
+      if (!document.nodes[childId]) {
+        return null;
+      }
+
+      return buildDirectedTreeLayout(
+        document,
+        childId,
+        1,
+        LOGIC_CHART_LAYOUT_CONFIG,
+      );
+    })
+    .filter((layout): layout is AutoLayoutResult => layout !== null);
+  const offsets = stackAutoLayoutSiblings(
+    layouts,
+    1,
+    LOGIC_CHART_LAYOUT_CONFIG.verticalGap,
+  );
+
+  layouts.forEach((layout, index) => {
+    const offsetY = offsets[index] ?? 0;
+
+    Object.entries(layout.positions).forEach(([nodeId, position]) => {
+      positions[nodeId] = {
+        x: rootNode.x + LOGIC_CHART_LAYOUT_CONFIG.horizontalGap + position.x,
+        y: rootCenterY + offsetY + position.y - NODE_HEIGHT / 2,
+      };
+    });
+  });
+
+  return positions;
+}
+
 function buildDirectedTreeLayout(
   document: MindMapDocument,
   nodeId: string,
   direction: -1 | 1,
+  config: TreeLayoutConfig,
 ): AutoLayoutResult {
   const node = document.nodes[nodeId];
   const baseLayout: AutoLayoutResult = {
@@ -183,18 +302,22 @@ function buildDirectedTreeLayout(
         return null;
       }
 
-      return buildDirectedTreeLayout(document, childId, direction);
+      return buildDirectedTreeLayout(document, childId, direction, config);
     })
     .filter((layout): layout is AutoLayoutResult => layout !== null);
 
-  const childOffsets = stackAutoLayoutSiblings(childLayouts, 1);
+  const childOffsets = stackAutoLayoutSiblings(
+    childLayouts,
+    1,
+    config.verticalGap,
+  );
 
   childLayouts.forEach((layout, index) => {
     const offsetY = childOffsets[index] ?? 0;
 
     Object.entries(layout.positions).forEach(([childId, position]) => {
       baseLayout.positions[childId] = {
-        x: direction * AUTO_LAYOUT_HORIZONTAL_GAP + position.x,
+        x: direction * config.horizontalGap + position.x,
         y: offsetY + position.y,
       };
     });
@@ -215,6 +338,7 @@ function buildDirectedTreeLayout(
 function stackAutoLayoutSiblings(
   layouts: AutoLayoutResult[],
   depthOffset: number,
+  verticalGap: number,
 ): number[] {
   if (layouts.length === 0) {
     return [];
@@ -228,7 +352,12 @@ function stackAutoLayoutSiblings(
     const offsetY =
       index === 0
         ? 0
-        : calculateAutoLayoutOffset(stackedBottom, layout.topContour, depthOffset);
+        : calculateAutoLayoutOffset(
+            stackedBottom,
+            layout.topContour,
+            depthOffset,
+            verticalGap,
+          );
 
     offsets.push(offsetY);
     mergeAutoLayoutContours(
@@ -253,6 +382,7 @@ function calculateAutoLayoutOffset(
   stackedBottom: Array<number | undefined>,
   nextTop: Array<number | undefined>,
   depthOffset: number,
+  verticalGap: number,
 ): number {
   let requiredOffset = 0;
 
@@ -268,11 +398,49 @@ function calculateAutoLayoutOffset(
 
     requiredOffset = Math.max(
       requiredOffset,
-      existingBottom + AUTO_LAYOUT_VERTICAL_GAP - value,
+      existingBottom + verticalGap - value,
     );
   });
 
   return requiredOffset;
+}
+
+function createLogicChartConnectorPath(
+  parentPosition: Position,
+  childPosition: Position,
+  direction: -1 | 1,
+  minimumCurveOffset = CONNECTOR_CURVE_OFFSET,
+  parentSize?: { width: number; height: number },
+  childSize?: { width: number; height: number },
+) {
+  const { startX, startY, endX, endY } = getConnectorPoints(
+    parentPosition,
+    childPosition,
+    direction,
+    parentSize,
+    childSize,
+  );
+  const minTail = Math.max(minimumCurveOffset * 0.52, 3);
+  const maxTail = Math.max(minimumCurveOffset * 1.4, minTail);
+  const lineTail = Math.max(
+    minTail,
+    Math.min(Math.abs(endX - startX) * 0.34, maxTail),
+  );
+  const bendX = endX - direction * lineTail;
+  const curveOffset = Math.max(
+    Math.min(minimumCurveOffset * 0.45, 52),
+    Math.abs(bendX - startX) * 0.48,
+  );
+  const bendControlOffset = Math.max(
+    curveOffset * 0.22,
+    minimumCurveOffset * 0.24,
+  );
+
+  return `M ${startX} ${startY} C ${
+    startX + direction * curveOffset
+  } ${startY}, ${
+    bendX - direction * bendControlOffset
+  } ${endY}, ${bendX} ${endY} L ${endX} ${endY}`;
 }
 
 function mergeAutoLayoutContours(
