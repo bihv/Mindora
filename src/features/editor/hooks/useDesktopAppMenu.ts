@@ -7,6 +7,7 @@ import {
   PredefinedMenuItem,
   Submenu,
 } from "@tauri-apps/api/menu";
+import type { ExportFormat } from "../exportTypes";
 
 type UseDesktopAppMenuArgs = {
   canRedo: boolean;
@@ -15,6 +16,7 @@ type UseDesktopAppMenuArgs = {
   isFileActionPending: boolean;
   isOutlineOpen: boolean;
   onAutoLayout: () => void;
+  onExportFile: (format: ExportFormat) => Promise<void> | void;
   onOpenFile: () => Promise<void> | void;
   onRedo: () => void;
   onSaveFile: () => Promise<void> | void;
@@ -24,6 +26,9 @@ type UseDesktopAppMenuArgs = {
 
 type DesktopAppMenu = {
   autoLayoutItem: MenuItem;
+  exportPdfItem: MenuItem;
+  exportPngItem: MenuItem;
+  exportSvgItem: MenuItem;
   menu: Menu;
   openItem: MenuItem;
   outlineItem: CheckMenuItem;
@@ -83,11 +88,15 @@ async function createDesktopAppMenu(
   const [
     openItem,
     saveItem,
+    exportPngItem,
+    exportSvgItem,
+    exportPdfItem,
     undoItem,
     redoItem,
     outlineItem,
     autoLayoutItem,
     fileSeparator,
+    exportSeparator,
     editSeparator,
     closeWindowItem,
     cutItem,
@@ -109,6 +118,27 @@ async function createDesktopAppMenu(
       accelerator: "CmdOrCtrl+S",
       action: () => {
         void getDesktopAppMenuRegistry().latestArgs?.onSaveFile();
+      },
+    }),
+    MenuItem.new({
+      id: "file-export-png",
+      text: "PNG...",
+      action: () => {
+        void getDesktopAppMenuRegistry().latestArgs?.onExportFile("png");
+      },
+    }),
+    MenuItem.new({
+      id: "file-export-svg",
+      text: "SVG...",
+      action: () => {
+        void getDesktopAppMenuRegistry().latestArgs?.onExportFile("svg");
+      },
+    }),
+    MenuItem.new({
+      id: "file-export-pdf",
+      text: "PDF...",
+      action: () => {
+        void getDesktopAppMenuRegistry().latestArgs?.onExportFile("pdf");
       },
     }),
     MenuItem.new({
@@ -144,6 +174,7 @@ async function createDesktopAppMenu(
     }),
     PredefinedMenuItem.new({ item: "Separator" }),
     PredefinedMenuItem.new({ item: "Separator" }),
+    PredefinedMenuItem.new({ item: "Separator" }),
     PredefinedMenuItem.new({ item: "CloseWindow" }),
     PredefinedMenuItem.new({ item: "Cut" }),
     PredefinedMenuItem.new({ item: "Copy" }),
@@ -151,10 +182,22 @@ async function createDesktopAppMenu(
     PredefinedMenuItem.new({ item: "SelectAll" }),
   ]);
 
+  const exportMenu = await Submenu.new({
+    text: "Export",
+    items: [exportPngItem, exportSvgItem, exportPdfItem],
+  });
+
   const [fileMenu, editMenu, viewMenu, layoutMenu] = await Promise.all([
     Submenu.new({
       text: "File",
-      items: [openItem, saveItem, fileSeparator, closeWindowItem],
+      items: [
+        openItem,
+        saveItem,
+        fileSeparator,
+        exportMenu,
+        exportSeparator,
+        closeWindowItem,
+      ],
     }),
     Submenu.new({
       text: "Edit",
@@ -186,6 +229,9 @@ async function createDesktopAppMenu(
 
   return {
     autoLayoutItem,
+    exportPdfItem,
+    exportPngItem,
+    exportSvgItem,
     menu,
     openItem,
     outlineItem,
@@ -203,6 +249,9 @@ async function syncDesktopAppMenu(
     menu.openItem.setEnabled(!args.isFileActionPending),
     menu.saveItem.setEnabled(!args.isFileActionPending),
     menu.saveItem.setText(args.currentFileName ? "Save" : "Save As..."),
+    menu.exportPngItem.setEnabled(!args.isFileActionPending),
+    menu.exportSvgItem.setEnabled(!args.isFileActionPending),
+    menu.exportPdfItem.setEnabled(!args.isFileActionPending),
     menu.undoItem.setEnabled(args.canUndo),
     menu.redoItem.setEnabled(args.canRedo),
     menu.outlineItem.setChecked(args.isOutlineOpen),

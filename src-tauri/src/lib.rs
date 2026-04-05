@@ -18,6 +18,12 @@ fn write_mindmap_file(path: String, contents: String) -> Result<(), String> {
         .map_err(|error| format!("Unable to write file '{}': {}", path, error))
 }
 
+#[tauri::command]
+fn write_binary_file(path: String, contents: Vec<u8>) -> Result<(), String> {
+    fs::write(&path, contents)
+        .map_err(|error| format!("Unable to write file '{}': {}", path, error))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -27,7 +33,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             read_mindmap_file,
-            write_mindmap_file
+            write_mindmap_file,
+            write_binary_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

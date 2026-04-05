@@ -12,13 +12,16 @@ import {
 } from "../../../mindmap";
 import { HISTORY_LIMIT } from "../constants";
 import {
+  saveMindMapExportFile,
   loadRecentMindMapFiles,
   openMindMapFile,
   openMindMapFileFromPath,
   saveMindMapFile,
   serializeMindMapDocument,
 } from "../filePersistence";
+import { buildMindMapExportBlob } from "../export";
 import { buildAutoLayoutPositions } from "../layout";
+import { EXPORT_FORMAT_LABELS, type ExportFormat } from "../exportTypes";
 import type {
   EditorFileState,
   EditorState,
@@ -447,6 +450,45 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     }
   }, [fileState.currentFileHandle, mindMap]);
 
+  const handleExportFile = useCallback(
+    async (format: ExportFormat) => {
+      setFileState((current) => ({
+        ...current,
+        isPending: true,
+        lastError: null,
+      }));
+
+      try {
+        const contents = await buildMindMapExportBlob(mindMap, format);
+        const result = await saveMindMapExportFile({
+          contents,
+          documentTitle: mindMap.title,
+          format,
+        });
+
+        setFileState((current) => ({
+          ...current,
+          isPending: false,
+          lastError: null,
+        }));
+
+        if (!result) {
+          return;
+        }
+      } catch (error) {
+        setFileState((current) => ({
+          ...current,
+          isPending: false,
+          lastError: getFileErrorMessage(
+            error,
+            `Unable to export the current map as ${EXPORT_FORMAT_LABELS[format]}.`,
+          ),
+        }));
+      }
+    },
+    [mindMap],
+  );
+
   const setSearchQuery = useCallback((value: string) => {
     setEditorState((current) => ({
       ...current,
@@ -477,6 +519,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleAddSibling,
       handleAutoLayout,
       handleDeleteSelected,
+      handleExportFile,
       handleNodeColorChange,
       handleNodeNotesChange,
       handleOpenFile,
@@ -509,6 +552,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleAddSibling,
       handleAutoLayout,
       handleDeleteSelected,
+      handleExportFile,
       handleNodeColorChange,
       handleNodeNotesChange,
       handleOpenFile,

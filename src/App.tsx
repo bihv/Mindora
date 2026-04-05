@@ -264,6 +264,7 @@ function App() {
     isFileActionPending: editor.fileState.isPending,
     isOutlineOpen: editor.isOutlineOpen,
     onAutoLayout: editor.handleAutoLayout,
+    onExportFile: editor.handleExportFile,
     onOpenFile: editor.handleOpenFile,
     onRedo: editor.redo,
     onSaveFile: editor.handleSaveFile,
@@ -310,6 +311,9 @@ function App() {
         hasUnsavedFileChanges={editor.hasUnsavedFileChanges}
         isFileActionPending={editor.fileState.isPending}
         lastFileActionError={editor.fileState.lastError}
+        onExportFile={(format) => {
+          void editor.handleExportFile(format);
+        }}
       />
 
       <CanvasStage
