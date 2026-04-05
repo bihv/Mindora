@@ -139,10 +139,10 @@ export function MindMapTypeDialog({
 
         <header className={styles.header}>
           <span className={styles.eyebrow}>Layout Gallery</span>
-          <h2 id={titleId}>Choose a layout style</h2>
+          <h2 id={titleId}>Choose a layout type</h2>
           <p id={descriptionId}>
             Pick the visual structure that matches how ideas should flow.
-            Switching styles will re-layout the current map.
+            Switching layout types will re-layout the current map.
           </p>
         </header>
 
@@ -213,7 +213,7 @@ export function MindMapTypeDialog({
               onClick={handleApply}
               type="button"
             >
-              {selectedLayoutType === currentLayoutType ? "Done" : "Apply layout"}
+              {selectedLayoutType === currentLayoutType ? "Done" : "Apply type"}
             </button>
           </div>
         </footer>

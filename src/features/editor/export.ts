@@ -1,7 +1,12 @@
 import {
+  buildExportBackground,
+  type MindMapBackgroundPresetId,
+} from "./backgroundPresets";
+import {
   LOGIC_CHART_LINE_LAYOUT,
   MINDMAP_LINE_LAYOUT,
   NODE_COLORS,
+  getMindMapBackgroundPresetId,
   getMindMapLayoutType,
   getBranchDirection,
   getSubtreeIds,
@@ -21,6 +26,7 @@ import type { Position } from "./types";
 import type { ExportFormat } from "./exportTypes";
 
 type ExportSnapshot = {
+  backgroundPresetId: MindMapBackgroundPresetId;
   connectors: Array<{
     color: string;
     path: string;
@@ -42,7 +48,6 @@ type NodeGradient = {
 };
 
 const EXPORT_PADDING = 180;
-const GRID_SIZE = 44;
 const MAX_EXPORT_CANVAS_EDGE = 8192;
 const MAX_EXPORT_CANVAS_PIXELS = 33_554_432;
 const PDF_MARGIN = 24;
@@ -116,6 +121,7 @@ export async function buildMindMapExportBlob(
 }
 
 function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
+  const backgroundPresetId = getMindMapBackgroundPresetId(document);
   const layoutType = getMindMapLayoutType(document);
   const nodeIds = getSubtreeIds(document, document.rootId).filter(
     (nodeId) => document.nodes[nodeId],
@@ -136,6 +142,7 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
 
   if (nodeIds.length === 0) {
     return {
+      backgroundPresetId,
       connectors: [],
       height: NODE_HEIGHT + EXPORT_PADDING * 2,
       layoutType,
@@ -215,6 +222,7 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
     );
 
   return {
+    backgroundPresetId,
     connectors,
     height: Math.ceil(maxY - minY + EXPORT_PADDING * 2),
     layoutType,
@@ -225,6 +233,11 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
 
 function buildSvgMarkup(snapshot: ExportSnapshot): string {
   const isLogicChart = isLogicChartLayoutType(snapshot.layoutType);
+  const background = buildExportBackground(
+    snapshot.backgroundPresetId,
+    snapshot.width,
+    snapshot.height,
+  );
   const connectorMarkup = snapshot.connectors
     .map(
       (connector) => `
@@ -248,12 +261,6 @@ function buildSvgMarkup(snapshot: ExportSnapshot): string {
         : buildMindMapNodeMarkup(snapshotNode),
     )
     .join("");
-  const backgroundMarkup = `
-  <rect width="${snapshot.width}" height="${snapshot.height}" fill="url(#mindora-export-bg)" />
-  <rect width="${snapshot.width}" height="${snapshot.height}" fill="url(#mindora-export-glow)" />
-  <rect width="${snapshot.width}" height="${snapshot.height}" fill="url(#mindora-export-grid)" />
-`;
-
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg
   xmlns="http://www.w3.org/2000/svg"
@@ -263,28 +270,7 @@ function buildSvgMarkup(snapshot: ExportSnapshot): string {
   role="img"
 >
   <defs>
-    <linearGradient id="mindora-export-bg" x1="0%" x2="0%" y1="0%" y2="100%">
-      <stop offset="0%" stop-color="#0a101c" />
-      <stop offset="100%" stop-color="#08101a" />
-    </linearGradient>
-    <radialGradient id="mindora-export-glow" cx="0%" cy="0%" r="58%">
-      <stop offset="0%" stop-color="#3c5a98" stop-opacity="0.22" />
-      <stop offset="100%" stop-color="#3c5a98" stop-opacity="0" />
-    </radialGradient>
-    <pattern
-      id="mindora-export-grid"
-      width="${GRID_SIZE}"
-      height="${GRID_SIZE}"
-      patternUnits="userSpaceOnUse"
-    >
-      <path
-        d="M ${GRID_SIZE} 0 L 0 0 0 ${GRID_SIZE}"
-        fill="none"
-        stroke="#ffffff"
-        stroke-opacity="0.03"
-        stroke-width="1"
-      />
-    </pattern>
+    ${background.defs}
     <filter
       id="mindora-node-shadow"
       x="-30%"
@@ -303,7 +289,7 @@ function buildSvgMarkup(snapshot: ExportSnapshot): string {
     ${buildGradientDefs()}
   </defs>
 
-${backgroundMarkup}
+${background.markup}
 
   <g>
     ${connectorMarkup}

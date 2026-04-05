@@ -17,6 +17,7 @@ type UseDesktopAppMenuArgs = {
   isOutlineOpen: boolean;
   onAutoLayout: () => void;
   onExportFile: (format: ExportFormat) => Promise<void> | void;
+  onOpenBackgroundDialog: () => void;
   onOpenLayoutDialog: () => void;
   onNewMindMap: () => void;
   onOpenFile: () => Promise<void> | void;
@@ -28,6 +29,7 @@ type UseDesktopAppMenuArgs = {
 
 type DesktopAppMenu = {
   autoLayoutItem: MenuItem;
+  backgroundItem: MenuItem;
   exportPdfItem: MenuItem;
   exportPngItem: MenuItem;
   exportSvgItem: MenuItem;
@@ -100,6 +102,7 @@ async function createDesktopAppMenu(
     redoItem,
     outlineItem,
     mindMapTypeItem,
+    backgroundItem,
     autoLayoutItem,
     fileSeparator,
     exportSeparator,
@@ -188,6 +191,13 @@ async function createDesktopAppMenu(
       },
     }),
     MenuItem.new({
+      id: "layout-background",
+      text: "Background...",
+      action: () => {
+        getDesktopAppMenuRegistry().latestArgs?.onOpenBackgroundDialog();
+      },
+    }),
+    MenuItem.new({
       id: "layout-auto",
       text: "Auto Layout",
       action: () => {
@@ -241,7 +251,7 @@ async function createDesktopAppMenu(
     }),
     Submenu.new({
       text: "Layout",
-      items: [mindMapTypeItem, layoutSeparator, autoLayoutItem],
+      items: [mindMapTypeItem, backgroundItem, layoutSeparator, autoLayoutItem],
     }),
   ]);
 
@@ -253,6 +263,7 @@ async function createDesktopAppMenu(
 
   return {
     autoLayoutItem,
+    backgroundItem,
     exportPdfItem,
     exportPngItem,
     exportSvgItem,
@@ -280,6 +291,7 @@ async function syncDesktopAppMenu(
     menu.exportSvgItem.setEnabled(!args.isFileActionPending),
     menu.exportPdfItem.setEnabled(!args.isFileActionPending),
     menu.mindMapTypeItem.setEnabled(!args.isFileActionPending),
+    menu.backgroundItem.setEnabled(!args.isFileActionPending),
     menu.undoItem.setEnabled(args.canUndo),
     menu.redoItem.setEnabled(args.canRedo),
     menu.outlineItem.setChecked(args.isOutlineOpen),

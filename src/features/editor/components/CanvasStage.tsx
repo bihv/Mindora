@@ -13,6 +13,10 @@ import {
   type MindMapDocument,
   type MindMapLayoutType,
 } from "../../../mindmap";
+import {
+  getCanvasBackgroundStyle,
+  type MindMapBackgroundPresetId,
+} from "../backgroundPresets";
 import styles from "./CanvasStage.module.css";
 import { truncateText } from "../utils";
 import type {
@@ -25,6 +29,7 @@ import type {
 type CanvasStageProps = {
   camera: CameraState;
   connectors: ConnectorItem[];
+  backgroundPresetId: MindMapBackgroundPresetId;
   draggingNodeId: string | null;
   hasActiveSelection: boolean;
   layoutType: MindMapLayoutType;
@@ -66,6 +71,7 @@ const nodeFocusClassNames: Record<NodeFocusState, string> = {
 export function CanvasStage({
   camera,
   connectors,
+  backgroundPresetId,
   draggingNodeId,
   hasActiveSelection,
   layoutType,
@@ -84,6 +90,11 @@ export function CanvasStage({
   visibleNodeIds,
   children,
 }: CanvasStageProps) {
+  const canvasBackgroundStyle = getCanvasBackgroundStyle(
+    backgroundPresetId,
+    camera,
+  );
+
   return (
     <div
       className={[
@@ -95,9 +106,7 @@ export function CanvasStage({
         .join(" ")}
       onClick={onCanvasClick}
       onPointerDown={onStagePointerDown}
-      style={{
-        backgroundPosition: `${-camera.x}px ${-camera.y}px, ${-camera.x}px ${-camera.y}px, center`,
-      }}
+      style={canvasBackgroundStyle}
     >
       <svg
         aria-hidden="true"

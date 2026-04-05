@@ -5,8 +5,9 @@ type DocumentStatusProps = {
   hasUnsavedFileChanges: boolean;
   isFileActionPending: boolean;
   lastFileActionError: string | null;
+  onOpenBackgroundDialog?: () => void;
   onOpenLayoutDialog?: () => void;
-  showLayoutAction?: boolean;
+  showCanvasActions?: boolean;
 };
 
 export function DocumentStatus({
@@ -14,8 +15,9 @@ export function DocumentStatus({
   hasUnsavedFileChanges,
   isFileActionPending,
   lastFileActionError,
+  onOpenBackgroundDialog,
   onOpenLayoutDialog,
-  showLayoutAction = false,
+  showCanvasActions = false,
 }: DocumentStatusProps) {
   const statusLabel = isFileActionPending
     ? "Working..."
@@ -41,16 +43,29 @@ export function DocumentStatus({
         <span>{statusLabel}</span>
       </div>
 
-      {showLayoutAction && onOpenLayoutDialog ? (
+      {showCanvasActions && (onOpenLayoutDialog || onOpenBackgroundDialog) ? (
         <div className={[styles.statusPill, styles.actionPill].join(" ")}>
-          <span className={styles.actionLabel}>Layout</span>
-          <button
-            className={styles.actionButton}
-            onClick={onOpenLayoutDialog}
-            type="button"
-          >
-            Mindmap Type...
-          </button>
+          <span className={styles.actionLabel}>Canvas</span>
+          <div className={styles.actionButtons}>
+            {onOpenLayoutDialog ? (
+              <button
+                className={styles.actionButton}
+                onClick={onOpenLayoutDialog}
+                type="button"
+              >
+                Type...
+              </button>
+            ) : null}
+            {onOpenBackgroundDialog ? (
+              <button
+                className={styles.actionButton}
+                onClick={onOpenBackgroundDialog}
+                type="button"
+              >
+                Background...
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>

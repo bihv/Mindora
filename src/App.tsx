@@ -29,6 +29,7 @@ import {
 import type { Position } from "./features/editor/types";
 import { clamp } from "./features/editor/utils";
 import { CanvasStage } from "./features/editor/components/CanvasStage";
+import { CanvasBackgroundDialog } from "./features/editor/components/CanvasBackgroundDialog";
 import { DocumentStatus } from "./features/editor/components/DocumentStatus";
 import { InspectorDrawer } from "./features/editor/components/InspectorDrawer";
 import { MindMapTypeDialog } from "./features/editor/components/MindMapTypeDialog";
@@ -288,6 +289,7 @@ function App() {
     isOutlineOpen: editor.isOutlineOpen,
     onAutoLayout: editor.handleAutoLayout,
     onExportFile: editor.handleExportFile,
+    onOpenBackgroundDialog: editor.openBackgroundDialog,
     onOpenLayoutDialog: editor.openLayoutDialog,
     onNewMindMap: editor.handleCreateNewMindMap,
     onOpenFile: editor.handleOpenFile,
@@ -337,11 +339,13 @@ function App() {
         hasUnsavedFileChanges={editor.hasUnsavedFileChanges}
         isFileActionPending={editor.fileState.isPending}
         lastFileActionError={editor.fileState.lastError}
+        onOpenBackgroundDialog={editor.openBackgroundDialog}
         onOpenLayoutDialog={editor.openLayoutDialog}
-        showLayoutAction={!desktopMenuEnabled}
+        showCanvasActions={!desktopMenuEnabled}
       />
 
       <CanvasStage
+        backgroundPresetId={editor.backgroundPresetId}
         camera={canvasState.camera}
         connectors={connectors}
         draggingNodeId={draggingState.dragging?.nodeId ?? null}
@@ -436,6 +440,13 @@ function App() {
         isOpen={editor.isLayoutDialogOpen}
         onApply={editor.handleLayoutTypeChange}
         onClose={editor.closeLayoutDialog}
+      />
+
+      <CanvasBackgroundDialog
+        currentBackgroundPresetId={editor.backgroundPresetId}
+        isOpen={editor.isBackgroundDialogOpen}
+        onApply={editor.handleBackgroundPresetChange}
+        onClose={editor.closeBackgroundDialog}
       />
     </div>
   );

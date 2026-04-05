@@ -1,3 +1,9 @@
+import {
+  DEFAULT_MINDMAP_BACKGROUND_PRESET_ID,
+  isMindMapBackgroundPresetId,
+  type MindMapBackgroundPresetId,
+} from "./features/editor/backgroundPresets";
+
 export type NodeColor = "slate" | "teal" | "amber" | "coral" | "violet";
 export const MINDMAP_CARD_LAYOUT = "mindmap-card";
 export const MINDMAP_LINE_LAYOUT = "mindmap-line";
@@ -30,6 +36,7 @@ export type MindMapDocument = {
   rootId: string;
   nodes: Record<string, MindMapNode>;
   layoutType?: MindMapLayoutType;
+  backgroundPresetId?: MindMapBackgroundPresetId;
 };
 
 export type MindMapTemplate = {
@@ -132,6 +139,7 @@ export function createBlankMindMap(title = "Focus Map"): MindMapDocument {
     id: createId(),
     title,
     rootId: rootNode.id,
+    backgroundPresetId: DEFAULT_MINDMAP_BACKGROUND_PRESET_ID,
     layoutType: DEFAULT_MINDMAP_LAYOUT_TYPE,
     nodes: {
       [rootNode.id]: rootNode,
@@ -173,17 +181,38 @@ export function setMindMapLayoutType(
   return document;
 }
 
+export function getMindMapBackgroundPresetId(
+  document: MindMapDocument,
+): MindMapBackgroundPresetId {
+  return isMindMapBackgroundPresetId(document.backgroundPresetId)
+    ? document.backgroundPresetId
+    : DEFAULT_MINDMAP_BACKGROUND_PRESET_ID;
+}
+
+export function setMindMapBackgroundPresetId(
+  document: MindMapDocument,
+  backgroundPresetId: MindMapBackgroundPresetId,
+): MindMapDocument {
+  document.backgroundPresetId = backgroundPresetId;
+  return document;
+}
+
 export function hydrateMindMapDocument(
   document: MindMapDocument,
 ): MindMapDocument {
   const layoutType = getMindMapLayoutType(document);
+  const backgroundPresetId = getMindMapBackgroundPresetId(document);
 
-  if (document.layoutType === layoutType) {
+  if (
+    document.layoutType === layoutType &&
+    document.backgroundPresetId === backgroundPresetId
+  ) {
     return document;
   }
 
   return {
     ...document,
+    backgroundPresetId,
     layoutType,
   };
 }

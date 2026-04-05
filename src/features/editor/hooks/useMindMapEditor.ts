@@ -1,14 +1,17 @@
 import { useCallback, useMemo, useState } from "react";
+import type { MindMapBackgroundPresetId } from "../backgroundPresets";
 import {
   cloneMindMapDocument,
   createBlankMindMap,
   createChildNode,
   createSiblingNode,
   deleteNode,
+  getMindMapBackgroundPresetId,
   getMindMapLayoutType,
   isClassicMindMapLayoutType,
   isLogicChartLayoutType,
   resolveSelectedNodeId,
+  setMindMapBackgroundPresetId,
   setMindMapLayoutType,
   syncClassicRootBranchDirections,
   updateNodePosition,
@@ -68,8 +71,10 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isLayoutDialogOpen, setIsLayoutDialogOpen] = useState(false);
+  const [isBackgroundDialogOpen, setIsBackgroundDialogOpen] = useState(false);
 
   const mindMap = editorState.history[editorState.historyIndex];
+  const backgroundPresetId = getMindMapBackgroundPresetId(mindMap);
   const layoutType = getMindMapLayoutType(mindMap);
   const selectedNodeId = resolveSelectedNodeId(mindMap, editorState.selectedNodeId);
   const hasActiveSelection = editorState.hasActiveSelection;
@@ -318,6 +323,20 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     ],
   );
 
+  const handleBackgroundPresetChange = useCallback(
+    (nextBackgroundPresetId: MindMapBackgroundPresetId) => {
+      if (nextBackgroundPresetId === backgroundPresetId) {
+        return;
+      }
+
+      commitDocument((draft) => {
+        setMindMapBackgroundPresetId(draft, nextBackgroundPresetId);
+      });
+      closeNodeMenu();
+    },
+    [backgroundPresetId, closeNodeMenu, commitDocument],
+  );
+
   const handleNodeTitleChange = useCallback(
     (nodeId: string, value: string) => {
       commitDocument((draft) => {
@@ -421,6 +440,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       setIsOutlineOpen(false);
       setIsInspectorOpen(false);
       setIsLayoutDialogOpen(false);
+      setIsBackgroundDialogOpen(false);
 
       requestAnimationFrame(() => {
         centerOnNode(nextSelectedNodeId);
@@ -584,11 +604,21 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   }, []);
 
   const openLayoutDialog = useCallback(() => {
+    setIsBackgroundDialogOpen(false);
     setIsLayoutDialogOpen(true);
   }, []);
 
   const closeLayoutDialog = useCallback(() => {
     setIsLayoutDialogOpen(false);
+  }, []);
+
+  const openBackgroundDialog = useCallback(() => {
+    setIsLayoutDialogOpen(false);
+    setIsBackgroundDialogOpen(true);
+  }, []);
+
+  const closeBackgroundDialog = useCallback(() => {
+    setIsBackgroundDialogOpen(false);
   }, []);
 
   const hasUnsavedFileChanges = useMemo(() => {
@@ -602,6 +632,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   return useMemo(
     () => ({
       clearSelection,
+      closeBackgroundDialog,
       closeNodeMenu,
       closeLayoutDialog,
       commitDocument,
@@ -610,6 +641,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleAddChild,
       handleAddSibling,
       handleAutoLayout,
+      handleBackgroundPresetChange,
       handleCreateNewMindMap,
       handleDeleteSelected,
       handleExportFile,
@@ -623,11 +655,14 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleToggleCollapsed,
       hasActiveSelection,
       hasUnsavedFileChanges,
+      backgroundPresetId,
+      isBackgroundDialogOpen,
       isInspectorOpen,
       isLayoutDialogOpen,
       isOutlineOpen,
       layoutType,
       mindMap,
+      openBackgroundDialog,
       openLayoutDialog,
       redo,
       selectNode,
@@ -641,6 +676,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     }),
     [
       clearSelection,
+      closeBackgroundDialog,
       closeNodeMenu,
       closeLayoutDialog,
       commitDocument,
@@ -649,6 +685,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleAddChild,
       handleAddSibling,
       handleAutoLayout,
+      handleBackgroundPresetChange,
       handleCreateNewMindMap,
       handleDeleteSelected,
       handleExportFile,
@@ -662,11 +699,14 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleToggleCollapsed,
       hasActiveSelection,
       hasUnsavedFileChanges,
+      backgroundPresetId,
+      isBackgroundDialogOpen,
       isInspectorOpen,
       isLayoutDialogOpen,
       isOutlineOpen,
       layoutType,
       mindMap,
+      openBackgroundDialog,
       openLayoutDialog,
       redo,
       selectNode,
