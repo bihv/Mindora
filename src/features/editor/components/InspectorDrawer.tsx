@@ -95,7 +95,8 @@ export function InspectorDrawer({
         <div className={drawerStyles.panelDivider} />
 
         <p className={styles.shortcutHint}>
-          Tab adds a child, Enter adds a sibling, and Delete removes the node.
+          Tab adds a child, Enter adds a sibling, Cmd/Ctrl+D duplicates, and
+          Delete removes the node.
         </p>
       </div>
     </aside>

@@ -299,6 +299,7 @@ function App() {
     handleAddChild: editor.handleAddChild,
     handleAddSibling: editor.handleAddSibling,
     handleDeleteSelected: editor.handleDeleteSelected,
+    handleDuplicateSelected: editor.handleDuplicateSelected,
     handleOpenFile: editor.handleOpenFile,
     handleSaveFile: editor.handleSaveFile,
     hasActiveSelection: editor.hasActiveSelection,
@@ -309,12 +310,15 @@ function App() {
   });
 
   useDesktopAppMenu({
+    canDuplicateNode:
+      editor.hasActiveSelection && editor.selectedNode.parentId !== null,
     canRedo: editor.editorState.historyIndex < editor.editorState.history.length - 1,
     canUndo: editor.editorState.historyIndex > 0,
     currentFileName: editor.fileState.currentFileName,
     isFileActionPending: editor.fileState.isPending,
     isOutlineOpen: editor.isOutlineOpen,
     onAutoLayout: editor.handleAutoLayout,
+    onDuplicateNode: editor.handleDuplicateSelected,
     onExportFile: editor.handleExportFile,
     onOpenBackgroundDialog: editor.openBackgroundDialog,
     onOpenLayoutDialog: editor.openLayoutDialog,
@@ -429,6 +433,7 @@ function App() {
           onAddChild={() => editor.handleAddChild(editor.selectedNode.id)}
           onAddSibling={() => editor.handleAddSibling(editor.selectedNode.id)}
           onDelete={editor.handleDeleteSelected}
+          onDuplicate={editor.handleDuplicateSelected}
           onToggleCollapsed={() =>
             editor.handleToggleCollapsed(editor.selectedNode.id)
           }

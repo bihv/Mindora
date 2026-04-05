@@ -7,6 +7,7 @@ import {
   createChildNode,
   createSiblingNode,
   deleteNode,
+  duplicateNodeSubtree,
   getMindMapBackgroundPresetId,
   getMindMapLayoutType,
   isClassicMindMapLayoutType,
@@ -274,6 +275,33 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     });
   }, [
     applyLogicChartLayoutIfNeeded,
+    commitDocument,
+    hasActiveSelection,
+    selectedNode.parentId,
+    selectedNodeId,
+  ]);
+
+  const handleDuplicateSelected = useCallback(() => {
+    if (!hasActiveSelection || selectedNode.parentId === null) {
+      return;
+    }
+
+    let duplicatedNodeId = selectedNodeId;
+
+    commitDocument((draft) => {
+      const result = duplicateNodeSubtree(draft, selectedNodeId);
+      applyLogicChartLayoutIfNeeded(draft);
+      duplicatedNodeId = result.nodeId;
+      return { selectedNodeId: result.nodeId };
+    });
+
+    requestAnimationFrame(() => {
+      centerOnNode(duplicatedNodeId);
+    });
+    setIsInspectorOpen(true);
+  }, [
+    applyLogicChartLayoutIfNeeded,
+    centerOnNode,
     commitDocument,
     hasActiveSelection,
     selectedNode.parentId,
@@ -677,6 +705,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleBackgroundPresetChange,
       handleCreateNewMindMap,
       handleDeleteSelected,
+      handleDuplicateSelected,
       handleExportFile,
       handleLayoutTypeChange,
       handleNodeColorChange,
@@ -722,6 +751,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleBackgroundPresetChange,
       handleCreateNewMindMap,
       handleDeleteSelected,
+      handleDuplicateSelected,
       handleExportFile,
       handleLayoutTypeChange,
       handleNodeColorChange,

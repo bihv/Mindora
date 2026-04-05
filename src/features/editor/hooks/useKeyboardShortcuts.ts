@@ -7,6 +7,7 @@ type UseKeyboardShortcutsArgs = {
   handleAddChild: (nodeId: string) => void;
   handleAddSibling: (nodeId: string) => void;
   handleDeleteSelected: () => void;
+  handleDuplicateSelected: () => void;
   handleOpenFile: () => Promise<void>;
   handleSaveFile: () => Promise<void>;
   hasActiveSelection: boolean;
@@ -22,6 +23,7 @@ export function useKeyboardShortcuts({
   handleAddChild,
   handleAddSibling,
   handleDeleteSelected,
+  handleDuplicateSelected,
   handleOpenFile,
   handleSaveFile,
   hasActiveSelection,
@@ -80,6 +82,14 @@ export function useKeyboardShortcuts({
         return;
       }
 
+      if (isMeta && event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        if (!selectedNodeIsRoot) {
+          handleDuplicateSelected();
+        }
+        return;
+      }
+
       if (event.key === "Tab") {
         event.preventDefault();
         handleAddChild(selectedNodeId);
@@ -106,6 +116,7 @@ export function useKeyboardShortcuts({
     handleAddChild,
     handleAddSibling,
     handleDeleteSelected,
+    handleDuplicateSelected,
     handleOpenFile,
     handleSaveFile,
     hasActiveSelection,

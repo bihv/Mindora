@@ -7,6 +7,7 @@ type NodeContextMenuProps = {
   onAddChild: () => void;
   onAddSibling: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   onToggleCollapsed: () => void;
   selectedNode: MindMapNode;
   top: number;
@@ -18,6 +19,7 @@ export function NodeContextMenu({
   onAddChild,
   onAddSibling,
   onDelete,
+  onDuplicate,
   onToggleCollapsed,
   selectedNode,
   top,
@@ -43,6 +45,15 @@ export function NodeContextMenu({
       >
         Child
       </button>
+      {selectedNode.parentId !== null ? (
+        <button
+          className={styles.nodeContextButton}
+          onClick={onDuplicate}
+          type="button"
+        >
+          Duplicate
+        </button>
+      ) : null}
       {selectedNode.parentId !== null ? (
         <button
           className={styles.nodeContextButton}

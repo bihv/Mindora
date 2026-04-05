@@ -10,12 +10,14 @@ import {
 import type { ExportFormat } from "../exportTypes";
 
 type UseDesktopAppMenuArgs = {
+  canDuplicateNode: boolean;
   canRedo: boolean;
   canUndo: boolean;
   currentFileName: string | null;
   isFileActionPending: boolean;
   isOutlineOpen: boolean;
   onAutoLayout: () => void;
+  onDuplicateNode: () => void;
   onExportFile: (format: ExportFormat) => Promise<void> | void;
   onOpenBackgroundDialog: () => void;
   onOpenLayoutDialog: () => void;
@@ -30,6 +32,7 @@ type UseDesktopAppMenuArgs = {
 type DesktopAppMenu = {
   autoLayoutItem: MenuItem;
   backgroundItem: MenuItem;
+  duplicateNodeItem: MenuItem;
   exportPdfItem: MenuItem;
   exportPngItem: MenuItem;
   exportSvgItem: MenuItem;
@@ -78,6 +81,7 @@ export function useDesktopAppMenu(args: UseDesktopAppMenuArgs): boolean {
       .then((menu) => syncDesktopAppMenu(menu, registry.latestArgs ?? args))
       .catch(logDesktopMenuError);
   }, [
+    args.canDuplicateNode,
     args.canRedo,
     args.canUndo,
     args.currentFileName,
@@ -100,6 +104,7 @@ async function createDesktopAppMenu(
     exportPdfItem,
     undoItem,
     redoItem,
+    duplicateNodeItem,
     outlineItem,
     mindMapTypeItem,
     backgroundItem,
@@ -175,6 +180,14 @@ async function createDesktopAppMenu(
         getDesktopAppMenuRegistry().latestArgs?.onRedo();
       },
     }),
+    MenuItem.new({
+      id: "edit-duplicate-node",
+      text: "Duplicate Node",
+      accelerator: "CmdOrCtrl+D",
+      action: () => {
+        getDesktopAppMenuRegistry().latestArgs?.onDuplicateNode();
+      },
+    }),
     CheckMenuItem.new({
       id: "view-outline",
       text: "Outline",
@@ -238,6 +251,7 @@ async function createDesktopAppMenu(
       items: [
         undoItem,
         redoItem,
+        duplicateNodeItem,
         editSeparator,
         cutItem,
         copyItem,
@@ -264,6 +278,7 @@ async function createDesktopAppMenu(
   return {
     autoLayoutItem,
     backgroundItem,
+    duplicateNodeItem,
     exportPdfItem,
     exportPngItem,
     exportSvgItem,
@@ -292,6 +307,9 @@ async function syncDesktopAppMenu(
     menu.exportPdfItem.setEnabled(!args.isFileActionPending),
     menu.mindMapTypeItem.setEnabled(!args.isFileActionPending),
     menu.backgroundItem.setEnabled(!args.isFileActionPending),
+    menu.duplicateNodeItem.setEnabled(
+      args.canDuplicateNode && !args.isFileActionPending,
+    ),
     menu.undoItem.setEnabled(args.canUndo),
     menu.redoItem.setEnabled(args.canRedo),
     menu.outlineItem.setChecked(args.isOutlineOpen),

@@ -3,6 +3,7 @@ import {
   isMindMapBackgroundPresetId,
   type MindMapBackgroundPresetId,
 } from "./features/editor/backgroundPresets";
+import { NODE_HEIGHT } from "./features/editor/constants";
 
 export type NodeColor = "slate" | "teal" | "amber" | "coral" | "violet";
 export const MINDMAP_CARD_LAYOUT = "mindmap-card";
@@ -345,6 +346,71 @@ export function createSiblingNode(
   }
 
   return createChildNode(document, node.parentId);
+}
+
+export function duplicateNodeSubtree(
+  document: MindMapDocument,
+  nodeId: string,
+): { document: MindMapDocument; nodeId: string } {
+  const sourceNode = document.nodes[nodeId];
+  if (!sourceNode || sourceNode.parentId === null) {
+    return { document, nodeId: document.rootId };
+  }
+
+  const parent = document.nodes[sourceNode.parentId];
+  if (!parent) {
+    return { document, nodeId: document.rootId };
+  }
+
+  const sourceSubtreeIds = getSubtreeIds(document, nodeId);
+  const sourceSubtreeIdSet = new Set(sourceSubtreeIds);
+  const duplicatedIds = new Map(
+    sourceSubtreeIds.map((sourceId) => [sourceId, createId()]),
+  );
+  const duplicatedRootId = duplicatedIds.get(nodeId) ?? document.rootId;
+
+  sourceSubtreeIds.forEach((sourceId) => {
+    const currentNode = document.nodes[sourceId];
+    const nextNodeId = duplicatedIds.get(sourceId);
+    if (!currentNode || !nextNodeId) {
+      return;
+    }
+
+    const nextParentId =
+      sourceId === nodeId
+        ? sourceNode.parentId
+        : (currentNode.parentId ? duplicatedIds.get(currentNode.parentId) : null);
+
+    document.nodes[nextNodeId] = {
+      ...currentNode,
+      id: nextNodeId,
+      parentId: nextParentId ?? sourceNode.parentId,
+      childrenIds: currentNode.childrenIds
+        .filter((childId) => sourceSubtreeIdSet.has(childId))
+        .map((childId) => duplicatedIds.get(childId) ?? childId),
+    };
+  });
+
+  const sourceIndex = parent.childrenIds.indexOf(nodeId);
+  const nextChildrenIds = [...parent.childrenIds];
+  const insertIndex =
+    sourceIndex === -1 ? nextChildrenIds.length : sourceIndex + 1;
+  nextChildrenIds.splice(insertIndex, 0, duplicatedRootId);
+
+  document.nodes[parent.id] = {
+    ...parent,
+    childrenIds: nextChildrenIds,
+    collapsed: false,
+  };
+
+  if (isClassicMindMapLayoutType(getMindMapLayoutType(document))) {
+    offsetDuplicatedSubtreeForClassicLayout(document, nodeId, duplicatedRootId);
+  }
+
+  return {
+    document,
+    nodeId: duplicatedRootId,
+  };
 }
 
 export function canReparentNode(
@@ -704,6 +770,101 @@ function createId(): string {
   }
 
   return `node-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function offsetDuplicatedSubtreeForClassicLayout(
+  document: MindMapDocument,
+  sourceNodeId: string,
+  duplicatedNodeId: string,
+): void {
+  const sourceNode = document.nodes[sourceNodeId];
+  const duplicatedNode = document.nodes[duplicatedNodeId];
+  if (!sourceNode || !duplicatedNode || !sourceNode.parentId) {
+    return;
+  }
+
+  const parent = document.nodes[sourceNode.parentId];
+  if (!parent) {
+    return;
+  }
+
+  const duplicatedBounds = getSubtreeVerticalBounds(document, duplicatedNodeId);
+  if (!duplicatedBounds) {
+    return;
+  }
+
+  const siblingBottom = parent.childrenIds
+    .filter((siblingId) => siblingId !== duplicatedNodeId)
+    .filter((siblingId) =>
+      shouldCompareSiblingBranch(document, sourceNodeId, parent.id, siblingId),
+    )
+    .reduce((maxBottom, siblingId) => {
+      const siblingBounds = getSubtreeVerticalBounds(document, siblingId);
+      return siblingBounds ? Math.max(maxBottom, siblingBounds.maxY) : maxBottom;
+    }, Number.NEGATIVE_INFINITY);
+
+  if (!Number.isFinite(siblingBottom)) {
+    return;
+  }
+
+  const deltaY = siblingBottom + VERTICAL_GAP - duplicatedBounds.minY;
+  if (deltaY <= 0) {
+    return;
+  }
+
+  getSubtreeIds(document, duplicatedNodeId).forEach((currentId) => {
+    const currentNode = document.nodes[currentId];
+    if (!currentNode) {
+      return;
+    }
+
+    document.nodes[currentId] = {
+      ...currentNode,
+      y: currentNode.y + deltaY,
+    };
+  });
+}
+
+function shouldCompareSiblingBranch(
+  document: MindMapDocument,
+  referenceNodeId: string,
+  parentId: string,
+  siblingId: string,
+): boolean {
+  const parent = document.nodes[parentId];
+  if (!parent) {
+    return false;
+  }
+
+  if (parent.parentId !== null) {
+    return true;
+  }
+
+  return getBranchDirection(document, referenceNodeId) === getBranchDirection(document, siblingId);
+}
+
+function getSubtreeVerticalBounds(
+  document: MindMapDocument,
+  nodeId: string,
+): { minY: number; maxY: number } | null {
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  getSubtreeIds(document, nodeId).forEach((currentId) => {
+    const currentNode = document.nodes[currentId];
+    if (!currentNode) {
+      return;
+    }
+
+    minY = Math.min(minY, currentNode.y);
+    maxY = Math.max(maxY, currentNode.y + NODE_HEIGHT);
+  });
+
+  if (!Number.isFinite(minY) || !Number.isFinite(maxY)) {
+    return null;
+  }
+
+  return { minY, maxY };
 }
 
 function alignReparentedSubtree(
