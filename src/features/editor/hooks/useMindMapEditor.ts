@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  LOGIC_CHART_LINE_LAYOUT,
   cloneMindMapDocument,
   createBlankMindMap,
   createChildNode,
@@ -8,6 +7,7 @@ import {
   deleteNode,
   getMindMapLayoutType,
   isClassicMindMapLayoutType,
+  isLogicChartLayoutType,
   resolveSelectedNodeId,
   setMindMapLayoutType,
   syncClassicRootBranchDirections,
@@ -114,7 +114,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const applyLogicChartLayoutIfNeeded = useCallback(
     (draft: MindMapDocument) => {
       const nextLayoutType = getMindMapLayoutType(draft);
-      if (nextLayoutType !== LOGIC_CHART_LINE_LAYOUT) {
+      if (!isLogicChartLayoutType(nextLayoutType)) {
         return;
       }
 

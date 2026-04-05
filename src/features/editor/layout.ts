@@ -11,8 +11,8 @@ import type {
   Position,
 } from "./types";
 import {
-  LOGIC_CHART_LINE_LAYOUT,
   getClassicRootBranchDirection,
+  isLogicChartLayoutType,
   type MindMapDocument,
   type MindMapLayoutType,
 } from "../../mindmap";
@@ -95,7 +95,7 @@ export function createLayoutConnectorPath(
   parentSize?: { width: number; height: number },
   childSize?: { width: number; height: number },
 ) {
-  if (layoutType === LOGIC_CHART_LINE_LAYOUT) {
+  if (isLogicChartLayoutType(layoutType)) {
     return createLogicChartConnectorPath(
       parentPosition,
       childPosition,
@@ -147,7 +147,7 @@ export function buildLayoutPositions(
   document: MindMapDocument,
   layoutType: MindMapLayoutType,
 ): Record<string, Position> {
-  return layoutType === LOGIC_CHART_LINE_LAYOUT
+  return isLogicChartLayoutType(layoutType)
     ? buildLogicChartLayoutPositions(document)
     : buildMindMapLayoutPositions(document);
 }

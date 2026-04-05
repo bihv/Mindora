@@ -5,6 +5,7 @@ import {
   getMindMapLayoutType,
   getBranchDirection,
   getSubtreeIds,
+  isLogicChartLayoutType,
   type MindMapDocument,
   type MindMapLayoutType,
   type MindMapNode,
@@ -223,7 +224,7 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
 }
 
 function buildSvgMarkup(snapshot: ExportSnapshot): string {
-  const isLogicChart = snapshot.layoutType === LOGIC_CHART_LINE_LAYOUT;
+  const isLogicChart = isLogicChartLayoutType(snapshot.layoutType);
   const connectorMarkup = snapshot.connectors
     .map(
       (connector) => `

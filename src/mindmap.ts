@@ -1,10 +1,12 @@
 export type NodeColor = "slate" | "teal" | "amber" | "coral" | "violet";
 export const MINDMAP_CARD_LAYOUT = "mindmap-card";
 export const MINDMAP_LINE_LAYOUT = "mindmap-line";
+export const LOGIC_CHART_CARD_LAYOUT = "logic-chart-card";
 export const LOGIC_CHART_LINE_LAYOUT = "logic-chart-line";
 export const MINDMAP_LAYOUT_TYPES = [
   MINDMAP_CARD_LAYOUT,
   MINDMAP_LINE_LAYOUT,
+  LOGIC_CHART_CARD_LAYOUT,
   LOGIC_CHART_LINE_LAYOUT,
 ] as const;
 export type MindMapLayoutType = (typeof MINDMAP_LAYOUT_TYPES)[number];
@@ -46,6 +48,15 @@ export function isClassicMindMapLayoutType(
 ): boolean {
   return (
     layoutType === MINDMAP_CARD_LAYOUT || layoutType === MINDMAP_LINE_LAYOUT
+  );
+}
+
+export function isLogicChartLayoutType(
+  layoutType: MindMapLayoutType,
+): boolean {
+  return (
+    layoutType === LOGIC_CHART_CARD_LAYOUT ||
+    layoutType === LOGIC_CHART_LINE_LAYOUT
   );
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import {
+  LOGIC_CHART_CARD_LAYOUT,
   LOGIC_CHART_LINE_LAYOUT,
   MINDMAP_CARD_LAYOUT,
   MINDMAP_LINE_LAYOUT,
@@ -7,6 +8,7 @@ import {
 } from "../../../mindmap";
 import mindMapPreviewAsset from "../../../assets/mindmap-type-classic.svg";
 import mindMapLinePreviewAsset from "../../../assets/mindmap-type-line.svg";
+import logicChartCardPreviewAsset from "../../../assets/mindmap-type-logic-chart-card.svg";
 import logicChartPreviewAsset from "../../../assets/mindmap-type-logic-chart.svg";
 import styles from "./MindMapTypeDialog.module.css";
 
@@ -51,6 +53,11 @@ const MINDMAP_TYPE_OPTIONS: MindMapTypeOption[] = [
     id: MINDMAP_LINE_LAYOUT,
     ariaLabel: "Mind Map line layout",
     groupId: "mindmap",
+  },
+  {
+    id: LOGIC_CHART_CARD_LAYOUT,
+    ariaLabel: "Logic Chart card layout",
+    groupId: "logic-chart",
   },
   {
     id: LOGIC_CHART_LINE_LAYOUT,
@@ -252,6 +259,18 @@ function MindMapTypeIllustration({
         className={[styles.previewSvg, styles.previewImage].join(" ")}
         draggable={false}
         src={logicChartPreviewAsset}
+      />
+    );
+  }
+
+  if (layoutType === LOGIC_CHART_CARD_LAYOUT) {
+    return (
+      <img
+        alt=""
+        aria-hidden="true"
+        className={[styles.previewSvg, styles.previewImage].join(" ")}
+        draggable={false}
+        src={logicChartCardPreviewAsset}
       />
     );
   }

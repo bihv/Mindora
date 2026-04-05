@@ -9,6 +9,7 @@ import {
   MINDMAP_LINE_LAYOUT,
   NODE_COLORS,
   getBranchDirection,
+  isLogicChartLayoutType,
   type MindMapDocument,
   type MindMapLayoutType,
 } from "../../../mindmap";
@@ -87,7 +88,7 @@ export function CanvasStage({
     <div
       className={[
         styles.canvasStage,
-        layoutType === LOGIC_CHART_LINE_LAYOUT ? styles.canvasStageOrganic : "",
+        isLogicChartLayoutType(layoutType) ? styles.canvasStageOrganic : "",
         panning ? styles.canvasStagePanning : "",
       ]
         .filter(Boolean)
@@ -125,9 +126,9 @@ export function CanvasStage({
         const isMatched = searchMatchIds.has(nodeId);
         const isDragging = draggingNodeId === nodeId;
         const focusState = nodeFocusStates[nodeId] ?? "dimmed";
-        const isLogicChart = layoutType === LOGIC_CHART_LINE_LAYOUT;
+        const isLogicChartLine = layoutType === LOGIC_CHART_LINE_LAYOUT;
         const isMindMapLine = layoutType === MINDMAP_LINE_LAYOUT;
-        const isLineLayout = isLogicChart || isMindMapLine;
+        const isLineLayout = isLogicChartLine || isMindMapLine;
         const branchDirection =
           node.parentId === null ? 1 : getBranchDirection(mindMap, nodeId);
         const isMindMapLineLeft =
