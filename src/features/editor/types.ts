@@ -24,6 +24,13 @@ export type DraggingState = {
   delta: Position;
 };
 
+export type NodeReparentingState = {
+  candidateParentId: string | null;
+  nodeId: string;
+  pointerPosition: Position;
+  rootDirection: -1 | 1 | null;
+};
+
 export type CameraState = Position;
 
 export type PanningState = {
@@ -45,6 +52,12 @@ export type ConnectorItem = {
   id: string;
   color: string;
   focusState: ConnectorFocusState;
+  path: string;
+};
+
+export type ConnectorPreviewItem = {
+  color: string;
+  isSnapped: boolean;
   path: string;
 };
 

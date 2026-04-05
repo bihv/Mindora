@@ -14,9 +14,11 @@ import {
 import type {
   CameraState,
   ConnectorItem,
+  ConnectorPreviewItem,
   DraggingState,
   MinimapData,
   NodeFocusState,
+  NodeReparentingState,
   Position,
   SearchMatch,
 } from "./types";
@@ -235,6 +237,66 @@ export function buildConnectors(
       };
     })
     .filter((item): item is ConnectorItem => item !== null);
+}
+
+export function buildReparentPreviewConnector(
+  document: MindMapDocument,
+  layoutType: MindMapLayoutType,
+  stagePositions: Record<string, Position>,
+  reparenting: NodeReparentingState | null,
+): ConnectorPreviewItem | null {
+  if (!reparenting) {
+    return null;
+  }
+
+  const node = document.nodes[reparenting.nodeId];
+  const childPosition = stagePositions[reparenting.nodeId];
+
+  if (!node || !childPosition) {
+    return null;
+  }
+
+  if (reparenting.candidateParentId) {
+    const parent = document.nodes[reparenting.candidateParentId];
+    const parentPosition = stagePositions[reparenting.candidateParentId];
+
+    if (!parent || !parentPosition) {
+      return null;
+    }
+
+    const direction =
+      parent.parentId === null
+        ? (reparenting.rootDirection ?? 1)
+        : getBranchDirection(document, parent.id);
+
+    return {
+      color: NODE_COLORS[node.color].accent,
+      isSnapped: true,
+      path: createLayoutConnectorPath(
+        layoutType,
+        parentPosition,
+        childPosition,
+        direction,
+        CONNECTOR_CURVE_OFFSET,
+      ),
+    };
+  }
+
+  return {
+    color: NODE_COLORS[node.color].accent,
+    isSnapped: false,
+    path: createLayoutConnectorPath(
+      layoutType,
+      reparenting.pointerPosition,
+      childPosition,
+      reparenting.pointerPosition.x <= childPosition.x ? 1 : -1,
+      CONNECTOR_CURVE_OFFSET,
+      {
+        width: 0,
+        height: 0,
+      },
+    ),
+  };
 }
 
 type BuildMinimapDataParams = {

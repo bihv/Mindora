@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { MindMapBackgroundPresetId } from "../backgroundPresets";
 import {
+  canReparentNode,
   cloneMindMapDocument,
   createBlankMindMap,
   createChildNode,
@@ -11,6 +12,7 @@ import {
   isClassicMindMapLayoutType,
   isLogicChartLayoutType,
   resolveSelectedNodeId,
+  reparentNode,
   setMindMapBackgroundPresetId,
   setMindMapLayoutType,
   syncClassicRootBranchDirections,
@@ -277,6 +279,37 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     selectedNode.parentId,
     selectedNodeId,
   ]);
+
+  const handleReparentNode = useCallback(
+    (
+      nodeId: string,
+      nextParentId: string,
+      options?: { rootDirection?: -1 | 1 },
+    ) => {
+      if (!canReparentNode(mindMap, nodeId, nextParentId)) {
+        return;
+      }
+
+      commitDocument((draft) => {
+        const result = reparentNode(draft, nodeId, nextParentId, options);
+        if (!result.moved) {
+          return;
+        }
+
+        applyLogicChartLayoutIfNeeded(draft);
+        return { selectedNodeId: result.nodeId };
+      });
+      closeNodeMenu();
+      setIsInspectorOpen(false);
+    },
+    [
+      applyLogicChartLayoutIfNeeded,
+      closeNodeMenu,
+      commitDocument,
+      mindMap,
+      setIsInspectorOpen,
+    ],
+  );
 
   const handleAutoLayout = useCallback(() => {
     commitDocument((draft) => {
@@ -650,6 +683,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleNodeNotesChange,
       handleOpenFile,
       handleOpenRecentFile,
+      handleReparentNode,
       handleSaveFile,
       handleNodeTitleChange,
       handleToggleCollapsed,
@@ -694,6 +728,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleNodeNotesChange,
       handleOpenFile,
       handleOpenRecentFile,
+      handleReparentNode,
       handleSaveFile,
       handleNodeTitleChange,
       handleToggleCollapsed,

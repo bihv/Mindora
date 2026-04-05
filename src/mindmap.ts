@@ -347,6 +347,76 @@ export function createSiblingNode(
   return createChildNode(document, node.parentId);
 }
 
+export function canReparentNode(
+  document: MindMapDocument,
+  nodeId: string,
+  nextParentId: string,
+): boolean {
+  const node = document.nodes[nodeId];
+  const nextParent = document.nodes[nextParentId];
+
+  if (
+    !node ||
+    node.parentId === null ||
+    !nextParent ||
+    node.parentId === nextParentId ||
+    nodeId === nextParentId
+  ) {
+    return false;
+  }
+
+  return !new Set(getSubtreeIds(document, nodeId)).has(nextParentId);
+}
+
+export function reparentNode(
+  document: MindMapDocument,
+  nodeId: string,
+  nextParentId: string,
+  options?: { rootDirection?: -1 | 1 },
+): { document: MindMapDocument; nodeId: string; moved: boolean } {
+  if (!canReparentNode(document, nodeId, nextParentId)) {
+    return { document, nodeId, moved: false };
+  }
+
+  const node = document.nodes[nodeId];
+  const previousParentId = node.parentId;
+  const nextParent = document.nodes[nextParentId];
+
+  if (!previousParentId || !nextParent) {
+    return { document, nodeId, moved: false };
+  }
+
+  const previousParent = document.nodes[previousParentId];
+  if (previousParent) {
+    document.nodes[previousParent.id] = {
+      ...previousParent,
+      childrenIds: previousParent.childrenIds.filter((childId) => childId !== nodeId),
+    };
+  }
+
+  document.nodes[nextParent.id] = {
+    ...nextParent,
+    childrenIds: [...nextParent.childrenIds.filter((childId) => childId !== nodeId), nodeId],
+    collapsed: false,
+  };
+  document.nodes[nodeId] = {
+    ...node,
+    parentId: nextParent.id,
+  };
+
+  alignReparentedSubtree(document, nodeId, nextParent.id, options?.rootDirection);
+
+  if (isClassicMindMapLayoutType(getMindMapLayoutType(document))) {
+    syncClassicRootBranchDirections(document);
+  }
+
+  return {
+    document,
+    nodeId,
+    moved: true,
+  };
+}
+
 export function updateNodePosition(
   document: MindMapDocument,
   positions: Record<string, { x: number; y: number }>,
@@ -634,4 +704,44 @@ function createId(): string {
   }
 
   return `node-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function alignReparentedSubtree(
+  document: MindMapDocument,
+  nodeId: string,
+  parentId: string,
+  rootDirection?: -1 | 1,
+): void {
+  const node = document.nodes[nodeId];
+  const parent = document.nodes[parentId];
+
+  if (!node || !parent) {
+    return;
+  }
+
+  const direction =
+    parent.parentId === null
+      ? (rootDirection ?? (node.x < parent.x ? -1 : 1))
+      : getBranchDirection(document, parent.id);
+  const desiredX = parent.x + direction * HORIZONTAL_GAP;
+
+  if (
+    (direction === 1 && node.x >= desiredX) ||
+    (direction === -1 && node.x <= desiredX)
+  ) {
+    return;
+  }
+
+  const deltaX = desiredX - node.x;
+  for (const currentId of getSubtreeIds(document, nodeId)) {
+    const currentNode = document.nodes[currentId];
+    if (!currentNode) {
+      continue;
+    }
+
+    document.nodes[currentId] = {
+      ...currentNode,
+      x: currentNode.x + deltaX,
+    };
+  }
 }

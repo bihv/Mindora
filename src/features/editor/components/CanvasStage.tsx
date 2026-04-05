@@ -22,6 +22,7 @@ import { truncateText } from "../utils";
 import type {
   CameraState,
   ConnectorItem,
+  ConnectorPreviewItem,
   NodeFocusState,
   Position,
 } from "../types";
@@ -40,6 +41,10 @@ type CanvasStageProps = {
     nodeId: string,
     event: ReactMouseEvent<HTMLElement>,
   ) => void;
+  onNodeConnectorPointerDown: (
+    nodeId: string,
+    event: ReactPointerEvent<HTMLElement>,
+  ) => void;
   onNodePointerDown: (
     nodeId: string,
     event: ReactPointerEvent<HTMLElement>,
@@ -51,6 +56,8 @@ type CanvasStageProps = {
   searchMatchIds: Set<string>;
   selectedNodeId: string;
   stagePositions: Record<string, Position>;
+  previewConnector: ConnectorPreviewItem | null;
+  reparentTargetNodeId: string | null;
   visibleNodeIds: string[];
   children?: ReactNode;
 };
@@ -79,11 +86,14 @@ export function CanvasStage({
   nodeFocusStates,
   onCanvasClick,
   onNodeContextMenu,
+  onNodeConnectorPointerDown,
   onNodePointerDown,
   onNodeSelect,
   onToggleCollapsed,
   onStagePointerDown,
   panning,
+  previewConnector,
+  reparentTargetNodeId,
   searchMatchIds,
   selectedNodeId,
   stagePositions,
@@ -104,6 +114,7 @@ export function CanvasStage({
       ]
         .filter(Boolean)
         .join(" ")}
+      data-canvas-stage="true"
       onClick={onCanvasClick}
       onPointerDown={onStagePointerDown}
       style={canvasBackgroundStyle}
@@ -125,6 +136,19 @@ export function CanvasStage({
             stroke={connector.color}
           />
         ))}
+        {previewConnector ? (
+          <path
+            className={[
+              styles.connectionsPath,
+              styles.connectionsPathPreview,
+              previewConnector.isSnapped ? styles.connectionsPathPreviewSnapped : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            d={previewConnector.path}
+            stroke={previewConnector.color}
+          />
+        ) : null}
       </svg>
 
       {visibleNodeIds.map((nodeId) => {
@@ -173,9 +197,11 @@ export function CanvasStage({
               isSelected ? styles.mindNodeSelected : "",
               isMatched ? styles.mindNodeMatched : "",
               isDragging ? styles.mindNodeDragging : "",
+              reparentTargetNodeId === node.id ? styles.mindNodeReparentTarget : "",
             ]
               .filter(Boolean)
               .join(" ")}
+            data-node-id={node.id}
             key={node.id}
             onClick={(event) => {
               event.stopPropagation();
@@ -217,6 +243,23 @@ export function CanvasStage({
                 </>
               )}
             </div>
+
+            {node.parentId !== null ? (
+              <button
+                aria-label="Change parent"
+                className={[
+                  styles.connectorHandle,
+                  branchDirection === -1 ? styles.connectorHandleLeft : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => onNodeConnectorPointerDown(node.id, event)}
+                type="button"
+              >
+                <span className={styles.connectorHandleDot} />
+              </button>
+            ) : null}
 
             {node.childrenIds.length > 0 ? (
               <button

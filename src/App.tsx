@@ -21,6 +21,7 @@ import {
   buildMinimapData,
   buildNodeFocusStates,
   buildOutlineSearchVisibleSet,
+  buildReparentPreviewConnector,
   buildRenderPositions,
   buildSelectedDescendantSet,
   buildSelectedLineageSet,
@@ -42,6 +43,7 @@ import { useDesktopAppMenu } from "./features/editor/hooks/useDesktopAppMenu";
 import { useKeyboardShortcuts } from "./features/editor/hooks/useKeyboardShortcuts";
 import { useMindMapEditor } from "./features/editor/hooks/useMindMapEditor";
 import { useNodeDragging } from "./features/editor/hooks/useNodeDragging";
+import { useNodeReparenting } from "./features/editor/hooks/useNodeReparenting";
 import { useWindowTitle } from "./features/editor/hooks/useWindowTitle";
 
 function App() {
@@ -72,6 +74,11 @@ function App() {
   const draggingState = useNodeDragging({
     commitDocument: editor.commitDocument,
     latestDocumentRef: canvasState.latestDocumentRef,
+    mindMap: editor.mindMap,
+    selectNode: editor.selectNode,
+  });
+  const reparentingState = useNodeReparenting({
+    handleReparentNode: editor.handleReparentNode,
     mindMap: editor.mindMap,
     selectNode: editor.selectNode,
   });
@@ -169,6 +176,25 @@ function App() {
       visibleNodeIdSet,
       visibleNodeIds,
     ],
+  );
+  const visibleConnectors = useMemo(() => {
+    if (!reparentingState.reparenting) {
+      return connectors;
+    }
+
+    return connectors.filter(
+      (connector) => connector.id !== reparentingState.reparenting?.nodeId,
+    );
+  }, [connectors, reparentingState.reparenting]);
+  const previewConnector = useMemo(
+    () =>
+      buildReparentPreviewConnector(
+        editor.mindMap,
+        editor.layoutType,
+        stagePositions,
+        reparentingState.reparenting,
+      ),
+    [editor.layoutType, editor.mindMap, reparentingState.reparenting, stagePositions],
   );
   const minimap = useMemo(
     () =>
@@ -358,13 +384,14 @@ function App() {
       <CanvasStage
         backgroundPresetId={editor.backgroundPresetId}
         camera={canvasState.camera}
-        connectors={connectors}
+        connectors={visibleConnectors}
         draggingNodeId={draggingState.dragging?.nodeId ?? null}
         hasActiveSelection={editor.hasActiveSelection}
         layoutType={editor.layoutType}
         mindMap={editor.mindMap}
         nodeFocusStates={nodeFocusStates}
         onCanvasClick={editor.clearSelection}
+        onNodeConnectorPointerDown={reparentingState.startReparenting}
         onNodeContextMenu={(nodeId, event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -385,6 +412,8 @@ function App() {
           canvasState.startPanning(event, editor.clearSelection)
         }
         panning={canvasState.panning !== null}
+        previewConnector={previewConnector}
+        reparentTargetNodeId={reparentingState.reparenting?.candidateParentId ?? null}
         searchMatchIds={searchMatchIds}
         selectedNodeId={editor.selectedNodeId}
         stagePositions={stagePositions}
