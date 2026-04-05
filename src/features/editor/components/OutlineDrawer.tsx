@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { NODE_COLORS, type MindMapDocument } from "../../../mindmap";
+import drawerStyles from "./EditorDrawer.module.css";
+import styles from "./OutlineDrawer.module.css";
 
 type OutlineDrawerProps = {
   hasActiveSelection: boolean;
@@ -47,22 +49,30 @@ export function OutlineDrawer({
     return (
       <div key={nodeId}>
         <button
-          className={`outline-item${
+          className={[
+            styles.outlineItem,
             hasActiveSelection && nodeId === selectedNodeId
-              ? " outline-item--selected"
-              : ""
-          }${searchMatchIds.has(nodeId) ? " outline-item--matched" : ""}`}
+              ? styles.outlineItemSelected
+              : "",
+            searchMatchIds.has(nodeId) ? styles.outlineItemMatched : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
           onClick={() => onSelectNode(nodeId)}
           style={{ paddingLeft: `${16 + depth * 18}px` }}
           type="button"
         >
           <span
-            className="outline-item__dot"
+            className={styles.outlineItemDot}
             style={{ background: NODE_COLORS[node.color].accent }}
           />
-          <span className="outline-item__title">{node.title || "Untitled Node"}</span>
+          <span className={styles.outlineItemTitle}>
+            {node.title || "Untitled Node"}
+          </span>
           {node.childrenIds.length > 0 ? (
-            <span className="outline-item__count">{node.childrenIds.length}</span>
+            <span className={styles.outlineItemCount}>
+              {node.childrenIds.length}
+            </span>
           ) : null}
         </button>
 
@@ -75,17 +85,23 @@ export function OutlineDrawer({
 
   return (
     <aside
-      className={`canvas-drawer canvas-drawer--left${isOpen ? " is-open" : ""}`}
+      className={[
+        drawerStyles.canvasDrawer,
+        drawerStyles.canvasDrawerLeft,
+        isOpen ? drawerStyles.isOpen : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       onWheel={(event) => event.stopPropagation()}
     >
-      <div className="floating-panel">
-        <div className="floating-panel__section">
-          <div className="panel__header">
+      <div className={drawerStyles.floatingPanel}>
+        <div className={drawerStyles.floatingPanelSection}>
+          <div className={drawerStyles.panelHeader}>
             <h2>Map</h2>
             <span>{totalNodes} node(s)</span>
           </div>
-          <label className="search-field">
-            <span className="search-field__label">Search</span>
+          <label className={styles.searchField}>
+            <span className={styles.searchFieldLabel}>Search</span>
             <input
               onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
               placeholder="Search nodes"
@@ -94,14 +110,21 @@ export function OutlineDrawer({
           </label>
         </div>
 
-        <div className="floating-panel__section floating-panel__section--grow">
-          <div className="panel__header">
+        <div
+          className={[
+            drawerStyles.floatingPanelSection,
+            drawerStyles.floatingPanelSectionGrow,
+          ].join(" ")}
+        >
+          <div className={drawerStyles.panelHeader}>
             <h2>Outline</h2>
             <span>Focus tree</span>
           </div>
-          <div className="outline-tree">
+          <div className={styles.outlineTree}>
             {searchQuery.trim() && searchMatchesCount === 0 ? (
-              <p className="empty-state">No matching node in the current map.</p>
+              <p className={styles.emptyState}>
+                No matching node in the current map.
+              </p>
             ) : (
               renderOutlineTree(mindMap.rootId)
             )}

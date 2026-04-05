@@ -4,6 +4,7 @@ import type {
   ReactNode,
 } from "react";
 import { NODE_COLORS, type MindMapDocument } from "../../../mindmap";
+import styles from "./CanvasStage.module.css";
 import { truncateText } from "../utils";
 import type {
   CameraState,
@@ -39,6 +40,19 @@ type CanvasStageProps = {
   children?: ReactNode;
 };
 
+const connectorFocusClassNames: Record<ConnectorItem["focusState"], string> = {
+  lineage: styles.connectionsPathLineage,
+  descendant: styles.connectionsPathDescendant,
+  dimmed: styles.connectionsPathDimmed,
+};
+
+const nodeFocusClassNames: Record<NodeFocusState, string> = {
+  selected: styles.mindNodeFocusSelected,
+  lineage: styles.mindNodeFocusLineage,
+  descendant: styles.mindNodeFocusDescendant,
+  dimmed: styles.mindNodeFocusDimmed,
+};
+
 export function CanvasStage({
   camera,
   connectors,
@@ -61,7 +75,12 @@ export function CanvasStage({
 }: CanvasStageProps) {
   return (
     <div
-      className={`canvas-stage${panning ? " canvas-stage--panning" : ""}`}
+      className={[
+        styles.canvasStage,
+        panning ? styles.canvasStagePanning : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       onClick={onCanvasClick}
       onPointerDown={onStagePointerDown}
       style={{
@@ -70,13 +89,16 @@ export function CanvasStage({
     >
       <svg
         aria-hidden="true"
-        className="connections"
+        className={styles.connections}
         height="100%"
         width="100%"
       >
         {connectors.map((connector) => (
           <path
-            className={`connections__path connections__path--${connector.focusState}`}
+            className={[
+              styles.connectionsPath,
+              connectorFocusClassNames[connector.focusState],
+            ].join(" ")}
             d={connector.path}
             key={connector.id}
             stroke={connector.color}
@@ -95,13 +117,15 @@ export function CanvasStage({
 
         return (
           <article
-            className={`mind-node${
-              isSelected ? " mind-node--selected" : ""
-            } mind-node--focus-${focusState}${
-              isMatched ? " mind-node--matched" : ""
-            }${
-              isDragging ? " mind-node--dragging" : ""
-            }`}
+            className={[
+              styles.mindNode,
+              nodeFocusClassNames[focusState],
+              isSelected ? styles.mindNodeSelected : "",
+              isMatched ? styles.mindNodeMatched : "",
+              isDragging ? styles.mindNodeDragging : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             key={node.id}
             onClick={(event) => {
               event.stopPropagation();
@@ -118,10 +142,10 @@ export function CanvasStage({
                 : {}),
             }}
           >
-            <div className="mind-node__content">
+            <div className={styles.mindNodeContent}>
               <h3>{node.title || "Untitled Node"}</h3>
               {node.notes ? (
-                <p className="mind-node__notes">
+                <p className={styles.mindNodeNotes}>
                   {truncateText(node.notes, 88)}
                 </p>
               ) : null}
@@ -130,9 +154,12 @@ export function CanvasStage({
             {node.childrenIds.length > 0 ? (
               <button
                 aria-label={node.collapsed ? "Expand node" : "Collapse node"}
-                className={`mind-node__toggle${
-                  node.collapsed ? " mind-node__toggle--collapsed" : ""
-                }`}
+                className={[
+                  styles.mindNodeToggle,
+                  node.collapsed ? styles.mindNodeToggleCollapsed : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={(event) => {
                   event.stopPropagation();
                   onToggleCollapsed(node.id);
@@ -140,10 +167,10 @@ export function CanvasStage({
                 onPointerDown={(event) => event.stopPropagation()}
                 type="button"
               >
-                <span className="mind-node__toggle-icon">
+                <span className={styles.mindNodeToggleIcon}>
                   {node.collapsed ? "+" : "-"}
                 </span>
-                <span className="mind-node__badge">{node.childrenIds.length}</span>
+                <span className={styles.mindNodeBadge}>{node.childrenIds.length}</span>
               </button>
             ) : null}
           </article>

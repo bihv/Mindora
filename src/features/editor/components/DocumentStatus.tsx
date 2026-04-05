@@ -1,3 +1,5 @@
+import styles from "./DocumentStatus.module.css";
+
 type DocumentStatusProps = {
   currentFileName: string | null;
   hasUnsavedFileChanges: boolean;
@@ -22,8 +24,15 @@ export function DocumentStatus({
         : "No file open";
 
   return (
-    <div className="canvas-status">
-      <div className={`status-pill${lastFileActionError ? " status-pill--error" : ""}`}>
+    <div className={styles.canvasStatus}>
+      <div
+        className={[
+          styles.statusPill,
+          lastFileActionError ? styles.statusPillError : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <strong>{currentFileName ?? "No file open"}</strong>
         <span>{statusLabel}</span>
       </div>

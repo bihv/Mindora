@@ -1,0 +1,87 @@
+.searchField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.searchFieldLabel,
+.outlineItemCount,
+.emptyState {
+  color: var(--text-secondary);
+}
+
+.searchField input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.searchField input:focus {
+  border-color: rgba(136, 223, 203, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.outlineTree {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.outlineItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.outlineItem:hover {
+  transform: translateY(-1px);
+  border-color: var(--surface-border-strong);
+}
+
+.outlineItemSelected {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.outlineItemMatched {
+  box-shadow: inset 0 0 0 1px rgba(136, 223, 203, 0.18);
+}
+
+.outlineItemDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.outlineItemTitle {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.emptyState {
+  margin: 0;
+  line-height: 1.45;
+}

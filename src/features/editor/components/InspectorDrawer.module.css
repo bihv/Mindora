@@ -1,0 +1,88 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field > span {
+  color: var(--text-secondary);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: rgba(136, 223, 203, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.field textarea {
+  min-height: 136px;
+  resize: vertical;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.colorChip {
+  padding: 11px 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.colorChip:hover {
+  transform: translateY(-1px);
+  border-color: var(--surface-border-strong);
+}
+
+.colorChip span {
+  display: block;
+  font-weight: 600;
+}
+
+.colorChipActive {
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.shortcutStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shortcutStrip span {
+  padding: 7px 10px;
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 720px) {
+  .colorGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,41 @@
+.nodeContextToolbar {
+  position: absolute;
+  z-index: 13;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 152px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(9, 16, 28, 0.9);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(16px);
+}
+
+.nodeContextButton {
+  padding: 8px 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.nodeContextButton:hover {
+  transform: translateY(-1px);
+  border-color: var(--surface-border-strong);
+}
+
+.nodeContextButtonDanger {
+  color: #ffc1c7;
+}
+
+.nodeContextButtonDanger:hover {
+  background: rgba(255, 143, 152, 0.14);
+}

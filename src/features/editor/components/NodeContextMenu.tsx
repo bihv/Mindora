@@ -1,4 +1,5 @@
 import type { MindMapNode } from "../../../mindmap";
+import styles from "./NodeContextMenu.module.css";
 
 type NodeContextMenuProps = {
   isVisible: boolean;
@@ -27,7 +28,7 @@ export function NodeContextMenu({
 
   return (
     <div
-      className="node-context-toolbar"
+      className={styles.nodeContextToolbar}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       style={{
@@ -36,7 +37,7 @@ export function NodeContextMenu({
       }}
     >
       <button
-        className="node-context-button"
+        className={styles.nodeContextButton}
         onClick={onAddChild}
         type="button"
       >
@@ -44,7 +45,7 @@ export function NodeContextMenu({
       </button>
       {selectedNode.parentId !== null ? (
         <button
-          className="node-context-button"
+          className={styles.nodeContextButton}
           onClick={onAddSibling}
           type="button"
         >
@@ -53,7 +54,7 @@ export function NodeContextMenu({
       ) : null}
       {selectedNode.childrenIds.length > 0 ? (
         <button
-          className="node-context-button"
+          className={styles.nodeContextButton}
           onClick={onToggleCollapsed}
           type="button"
         >
@@ -62,7 +63,9 @@ export function NodeContextMenu({
       ) : null}
       {selectedNode.parentId !== null ? (
         <button
-          className="node-context-button node-context-button--danger"
+          className={[styles.nodeContextButton, styles.nodeContextButtonDanger].join(
+            " ",
+          )}
           onClick={onDelete}
           type="button"
         >

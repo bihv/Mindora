@@ -1,4 +1,5 @@
 import type { RecentMindMapFile } from "../filePersistence";
+import styles from "./RecentFilesLauncher.module.css";
 
 type RecentFilesLauncherProps = {
   isFileActionPending: boolean;
@@ -16,10 +17,10 @@ export function RecentFilesLauncher({
   recentFiles,
 }: RecentFilesLauncherProps) {
   return (
-    <main className="startup-screen">
-      <section className="startup-screen__panel">
-        <header className="startup-screen__header">
-          <span className="startup-screen__eyebrow">Mindora</span>
+    <main className={styles.startupScreen}>
+      <section className={styles.panel}>
+        <header className={styles.header}>
+          <span className={styles.eyebrow}>Mindora</span>
           <h1>Open a recent map</h1>
           <p>
             The app starts with your recent desktop files only. Choose one to load
@@ -27,30 +28,30 @@ export function RecentFilesLauncher({
           </p>
         </header>
 
-        <div className="startup-screen__actions">
+        <div className={styles.actions}>
           <button
-            className="startup-screen__primary"
+            className={styles.primaryButton}
             disabled={isFileActionPending}
             onClick={onOpenFile}
             type="button"
           >
             {isFileActionPending ? "Opening..." : "Browse files"}
           </button>
-          <span className="startup-screen__hint">Supported: `.mindora.json`, `.json`</span>
+          <span className={styles.hint}>Supported: `.mindora.json`, `.json`</span>
         </div>
 
         {lastFileActionError ? (
-          <div className="startup-screen__error" role="alert">
+          <div className={styles.error} role="alert">
             {lastFileActionError}
           </div>
         ) : null}
 
-        <div className="startup-screen__list">
+        <div className={styles.list}>
           {recentFiles.length > 0 ? (
             recentFiles.map((recentFile) => (
               <button
                 key={recentFile.path}
-                className="recent-file-card"
+                className={styles.recentFileCard}
                 disabled={isFileActionPending}
                 onClick={() => onOpenRecentFile(recentFile.path)}
                 type="button"
@@ -60,7 +61,7 @@ export function RecentFilesLauncher({
               </button>
             ))
           ) : (
-            <div className="startup-screen__empty">
+            <div className={styles.empty}>
               No recent desktop files yet. Open a map once and it will appear here
               next time.
             </div>

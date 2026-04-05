@@ -1,0 +1,81 @@
+.minimap {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  z-index: 12;
+  cursor: crosshair;
+}
+
+.surface {
+  display: block;
+  overflow: hidden;
+}
+
+.bounds {
+  fill: rgba(255, 255, 255, 0.04);
+  stroke: rgba(255, 255, 255, 0.1);
+}
+
+.connector {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  transition:
+    opacity 180ms ease,
+    stroke 180ms ease;
+}
+
+.minimapConnectorLineage {
+  opacity: 0.95;
+  stroke: rgba(255, 255, 255, 0.5);
+}
+
+.minimapConnectorDescendant {
+  opacity: 0.42;
+  stroke: rgba(255, 255, 255, 0.24);
+}
+
+.minimapConnectorDimmed {
+  opacity: 0.12;
+  stroke: rgba(255, 255, 255, 0.14);
+}
+
+.node {
+  opacity: 0.8;
+  stroke: rgba(6, 12, 22, 0.42);
+  stroke-width: 1;
+  transition:
+    opacity 180ms ease,
+    stroke 180ms ease;
+}
+
+.minimapNodeLineage {
+  opacity: 0.88;
+}
+
+.minimapNodeDescendant {
+  opacity: 0.48;
+}
+
+.minimapNodeDimmed {
+  opacity: 0.16;
+}
+
+.minimapNodeSelected {
+  opacity: 1;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 1.5;
+}
+
+.viewport {
+  fill: rgba(136, 223, 203, 0.12);
+  stroke: rgba(136, 223, 203, 0.95);
+  stroke-width: 2;
+}
+
+@media (max-width: 720px) {
+  .minimap {
+    display: none;
+  }
+}

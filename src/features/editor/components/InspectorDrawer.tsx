@@ -1,4 +1,6 @@
 import { NODE_COLORS, type MindMapNode, type NodeColor } from "../../../mindmap";
+import drawerStyles from "./EditorDrawer.module.css";
+import styles from "./InspectorDrawer.module.css";
 
 type InspectorDrawerProps = {
   isOpen: boolean;
@@ -21,17 +23,26 @@ export function InspectorDrawer({
 
   return (
     <aside
-      className="canvas-drawer canvas-drawer--right is-open"
+      className={[
+        drawerStyles.canvasDrawer,
+        drawerStyles.canvasDrawerRight,
+        drawerStyles.isOpen,
+      ].join(" ")}
       onWheel={(event) => event.stopPropagation()}
     >
-      <div className="floating-panel floating-panel--inspector">
-        <div className="floating-panel__section">
-          <div className="panel__header">
+      <div
+        className={[
+          drawerStyles.floatingPanel,
+          drawerStyles.floatingPanelInspector,
+        ].join(" ")}
+      >
+        <div className={drawerStyles.floatingPanelSection}>
+          <div className={drawerStyles.panelHeader}>
             <h2>Inspector</h2>
             <span>{selectedNode.parentId === null ? "Root" : "Selected"}</span>
           </div>
 
-          <label className="field">
+          <label className={styles.field}>
             <span>Title</span>
             <input
               onChange={(event) => onNodeTitleChange(event.currentTarget.value)}
@@ -39,7 +50,7 @@ export function InspectorDrawer({
             />
           </label>
 
-          <label className="field">
+          <label className={styles.field}>
             <span>Notes</span>
             <textarea
               onChange={(event) => onNodeNotesChange(event.currentTarget.value)}
@@ -49,18 +60,21 @@ export function InspectorDrawer({
             />
           </label>
 
-          <div className="field">
+          <div className={styles.field}>
             <span>Color</span>
-            <div className="color-grid">
+            <div className={styles.colorGrid}>
               {(Object.entries(NODE_COLORS) as [
                 NodeColor,
                 (typeof NODE_COLORS)[NodeColor],
               ][]).map(([colorKey, colorValue]) => (
                 <button
                   aria-label={colorValue.label}
-                  className={`color-chip${
-                    selectedNode.color === colorKey ? " color-chip--active" : ""
-                  }`}
+                  className={[
+                    styles.colorChip,
+                    selectedNode.color === colorKey ? styles.colorChipActive : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                   key={colorKey}
                   onClick={() => onNodeColorChange(colorKey)}
                   style={{ background: colorValue.surface }}
@@ -73,8 +87,13 @@ export function InspectorDrawer({
           </div>
         </div>
 
-        <div className="floating-panel__section floating-panel__section--meta">
-          <div className="shortcut-strip">
+        <div
+          className={[
+            drawerStyles.floatingPanelSection,
+            drawerStyles.floatingPanelSectionMeta,
+          ].join(" ")}
+        >
+          <div className={styles.shortcutStrip}>
             <span>Tab: child</span>
             <span>Enter: sibling</span>
             <span>Delete: remove</span>

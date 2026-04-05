@@ -5,6 +5,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import "./App.css";
+import appStyles from "./App.module.css";
 import { getVisibleNodeIds } from "./mindmap";
 import {
   MIN_CANVAS_HEIGHT,
@@ -300,7 +301,7 @@ function App() {
 
   return (
     <div
-      className="canvas-viewport"
+      className={appStyles.canvasViewport}
       onWheel={canvasState.handleViewportWheel}
       ref={canvasState.viewportRef}
     >

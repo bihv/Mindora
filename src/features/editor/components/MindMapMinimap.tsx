@@ -1,6 +1,20 @@
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { MINIMAP_HEIGHT, MINIMAP_WIDTH } from "../constants";
 import type { MinimapData } from "../types";
+import styles from "./MindMapMinimap.module.css";
+
+const connectorFocusClassNames = {
+  lineage: styles.minimapConnectorLineage,
+  descendant: styles.minimapConnectorDescendant,
+  dimmed: styles.minimapConnectorDimmed,
+} as const;
+
+const nodeFocusClassNames = {
+  selected: "",
+  lineage: styles.minimapNodeLineage,
+  descendant: styles.minimapNodeDescendant,
+  dimmed: styles.minimapNodeDimmed,
+} as const;
 
 type MindMapMinimapProps = {
   minimap: MinimapData;
@@ -14,10 +28,10 @@ export function MindMapMinimap({
   onPointerDown,
 }: MindMapMinimapProps) {
   return (
-    <div className="minimap">
+    <div className={styles.minimap}>
       <svg
         aria-label="Canvas minimap"
-        className="minimap__surface"
+        className={styles.surface}
         height={MINIMAP_HEIGHT}
         onPointerDown={onPointerDown}
         ref={minimapRef}
@@ -25,7 +39,7 @@ export function MindMapMinimap({
         width={MINIMAP_WIDTH}
       >
         <rect
-          className="minimap__bounds"
+          className={styles.bounds}
           height={MINIMAP_HEIGHT - 1}
           rx="16"
           width={MINIMAP_WIDTH - 1}
@@ -34,16 +48,23 @@ export function MindMapMinimap({
         />
         {minimap.connectorPaths.map((connector) => (
           <path
-            className={`minimap__connector minimap__connector--${connector.focusState}`}
+            className={[
+              styles.connector,
+              connectorFocusClassNames[connector.focusState],
+            ].join(" ")}
             d={connector.path}
             key={connector.id}
           />
         ))}
         {minimap.nodes.map((node) => (
           <rect
-            className={`minimap__node${
-              node.isSelected ? " minimap__node--selected" : ""
-            } minimap__node--${node.focusState}`}
+            className={[
+              styles.node,
+              nodeFocusClassNames[node.focusState],
+              node.isSelected ? styles.minimapNodeSelected : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             fill={node.color}
             height={node.height}
             key={node.id}
@@ -54,7 +75,7 @@ export function MindMapMinimap({
           />
         ))}
         <rect
-          className="minimap__viewport"
+          className={styles.viewport}
           height={minimap.viewport.height}
           rx="0"
           width={minimap.viewport.width}

@@ -1,0 +1,140 @@
+.canvasDrawer {
+  position: absolute;
+  top: 22px;
+  bottom: 22px;
+  z-index: 11;
+  display: flex;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.canvasDrawerLeft {
+  left: 22px;
+  transform: translateX(-18px);
+}
+
+.canvasDrawerRight {
+  right: 22px;
+  align-items: center;
+  overflow-y: auto;
+  transform: translateX(18px);
+}
+
+.isOpen {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.canvasDrawerLeft.isOpen {
+  padding-top: 52px;
+}
+
+.floatingPanel {
+  width: 320px;
+  max-width: min(340px, calc(100vw - 52px));
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 22px;
+  background: rgba(12, 20, 34, 0.8);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(22px);
+}
+
+.floatingPanelInspector {
+  width: 312px;
+}
+
+.floatingPanelSection {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.floatingPanelSectionGrow {
+  flex: 1;
+}
+
+.floatingPanelSectionMeta {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  font-size: 0.98rem;
+  letter-spacing: -0.03em;
+}
+
+.panelHeader span {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1180px) {
+  .floatingPanel,
+  .floatingPanelInspector {
+    width: 288px;
+  }
+}
+
+@media (max-width: 920px) {
+  .canvasDrawer {
+    top: 18px;
+    bottom: 18px;
+  }
+
+  .canvasDrawerRight {
+    top: auto;
+    bottom: 18px;
+    max-height: min(52vh, 460px);
+  }
+}
+
+@media (max-width: 720px) {
+  .canvasDrawerLeft,
+  .canvasDrawerRight {
+    left: 14px;
+    right: 14px;
+  }
+
+  .floatingPanel,
+  .floatingPanelInspector {
+    width: 100%;
+    max-width: none;
+  }
+
+  .canvasDrawerLeft,
+  .canvasDrawerRight {
+    top: 126px;
+    bottom: 86px;
+  }
+
+  .canvasDrawerLeft.isOpen {
+    padding-top: 0;
+  }
+
+  .canvasDrawerRight {
+    top: auto;
+    bottom: 86px;
+    max-height: 44vh;
+  }
+}
