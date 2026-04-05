@@ -1,8 +1,10 @@
 export type NodeColor = "slate" | "teal" | "amber" | "coral" | "violet";
 export const MINDMAP_CARD_LAYOUT = "mindmap-card";
+export const MINDMAP_LINE_LAYOUT = "mindmap-line";
 export const LOGIC_CHART_LINE_LAYOUT = "logic-chart-line";
 export const MINDMAP_LAYOUT_TYPES = [
   MINDMAP_CARD_LAYOUT,
+  MINDMAP_LINE_LAYOUT,
   LOGIC_CHART_LINE_LAYOUT,
 ] as const;
 export type MindMapLayoutType = (typeof MINDMAP_LAYOUT_TYPES)[number];
@@ -38,6 +40,14 @@ export type MindMapTemplate = {
 export const STORAGE_KEY = "mindora:mvp-document";
 export const TEMPLATE_KEY = "mindora:active-template";
 export const DEFAULT_MINDMAP_LAYOUT_TYPE: MindMapLayoutType = MINDMAP_CARD_LAYOUT;
+
+export function isClassicMindMapLayoutType(
+  layoutType: MindMapLayoutType,
+): boolean {
+  return (
+    layoutType === MINDMAP_CARD_LAYOUT || layoutType === MINDMAP_LINE_LAYOUT
+  );
+}
 
 export const NODE_COLORS: Record<
   NodeColor,
@@ -314,7 +324,7 @@ export function updateNodePosition(
     };
   }
 
-  if (getMindMapLayoutType(document) === MINDMAP_CARD_LAYOUT) {
+  if (isClassicMindMapLayoutType(getMindMapLayoutType(document))) {
     syncClassicRootBranchDirections(document);
   }
 

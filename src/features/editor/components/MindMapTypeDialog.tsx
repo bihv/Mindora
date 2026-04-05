@@ -2,9 +2,11 @@ import { useEffect, useId, useState } from "react";
 import {
   LOGIC_CHART_LINE_LAYOUT,
   MINDMAP_CARD_LAYOUT,
+  MINDMAP_LINE_LAYOUT,
   type MindMapLayoutType,
 } from "../../../mindmap";
 import mindMapPreviewAsset from "../../../assets/mindmap-type-classic.svg";
+import mindMapLinePreviewAsset from "../../../assets/mindmap-type-line.svg";
 import logicChartPreviewAsset from "../../../assets/mindmap-type-logic-chart.svg";
 import styles from "./MindMapTypeDialog.module.css";
 
@@ -43,6 +45,11 @@ const MINDMAP_TYPE_OPTIONS: MindMapTypeOption[] = [
   {
     id: MINDMAP_CARD_LAYOUT,
     ariaLabel: "Mind Map card layout",
+    groupId: "mindmap",
+  },
+  {
+    id: MINDMAP_LINE_LAYOUT,
+    ariaLabel: "Mind Map line layout",
     groupId: "mindmap",
   },
   {
@@ -166,7 +173,7 @@ export function MindMapTypeDialog({
                       <div
                         className={[
                           styles.previewFrame,
-                          option.id === MINDMAP_CARD_LAYOUT
+                          option.groupId === "mindmap"
                             ? styles.previewFrameMindMap
                             : styles.previewFrameLogicChart,
                         ].join(" ")}
@@ -221,6 +228,18 @@ function MindMapTypeIllustration({
         className={[styles.previewSvg, styles.previewImage].join(" ")}
         draggable={false}
         src={mindMapPreviewAsset}
+      />
+    );
+  }
+
+  if (layoutType === MINDMAP_LINE_LAYOUT) {
+    return (
+      <img
+        alt=""
+        aria-hidden="true"
+        className={[styles.previewSvg, styles.previewImage].join(" ")}
+        draggable={false}
+        src={mindMapLinePreviewAsset}
       />
     );
   }

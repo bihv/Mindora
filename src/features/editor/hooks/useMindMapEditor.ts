@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   LOGIC_CHART_LINE_LAYOUT,
-  MINDMAP_CARD_LAYOUT,
   cloneMindMapDocument,
   createBlankMindMap,
   createChildNode,
   createSiblingNode,
   deleteNode,
   getMindMapLayoutType,
+  isClassicMindMapLayoutType,
   resolveSelectedNodeId,
   setMindMapLayoutType,
   syncClassicRootBranchDirections,
@@ -296,7 +296,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       }
 
       commitDocument((draft) => {
-        if (layoutType === MINDMAP_CARD_LAYOUT) {
+        if (isClassicMindMapLayoutType(layoutType)) {
           syncClassicRootBranchDirections(draft);
         }
 

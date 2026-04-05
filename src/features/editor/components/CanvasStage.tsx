@@ -6,7 +6,9 @@ import type {
 } from "react";
 import {
   LOGIC_CHART_LINE_LAYOUT,
+  MINDMAP_LINE_LAYOUT,
   NODE_COLORS,
+  getBranchDirection,
   type MindMapDocument,
   type MindMapLayoutType,
 } from "../../../mindmap";
@@ -124,7 +126,13 @@ export function CanvasStage({
         const isDragging = draggingNodeId === nodeId;
         const focusState = nodeFocusStates[nodeId] ?? "dimmed";
         const isLogicChart = layoutType === LOGIC_CHART_LINE_LAYOUT;
-        const nodeStyle = isLogicChart
+        const isMindMapLine = layoutType === MINDMAP_LINE_LAYOUT;
+        const isLineLayout = isLogicChart || isMindMapLine;
+        const branchDirection =
+          node.parentId === null ? 1 : getBranchDirection(mindMap, nodeId);
+        const isMindMapLineLeft =
+          isMindMapLine && node.parentId !== null && branchDirection === -1;
+        const nodeStyle = isLineLayout
           ? ({
               left: `${position.x}px`,
               top: `${position.y}px`,
@@ -144,8 +152,13 @@ export function CanvasStage({
           <article
             className={[
               styles.mindNode,
-              isLogicChart ? styles.mindNodeOrganic : "",
-              isLogicChart && node.parentId === null ? styles.mindNodeOrganicRoot : "",
+              isLineLayout ? styles.mindNodeOrganic : "",
+              isLineLayout && node.parentId === null ? styles.mindNodeOrganicRoot : "",
+              isMindMapLine ? styles.mindNodeClassicLine : "",
+              isMindMapLineLeft ? styles.mindNodeClassicLineLeft : "",
+              isMindMapLine && node.parentId === null
+                ? styles.mindNodeClassicLineRoot
+                : "",
               nodeFocusClassNames[focusState],
               isSelected ? styles.mindNodeSelected : "",
               isMatched ? styles.mindNodeMatched : "",
@@ -163,8 +176,18 @@ export function CanvasStage({
             style={nodeStyle}
           >
             <div className={styles.mindNodeContent}>
-              {isLogicChart ? (
-                <div className={styles.mindNodeOrganicTitleRow}>
+              {isLineLayout ? (
+                <div
+                  className={[
+                    styles.mindNodeOrganicTitleRow,
+                    isMindMapLineLeft ? styles.mindNodeOrganicTitleRowReverse : "",
+                    isMindMapLine && node.parentId === null
+                      ? styles.mindNodeClassicLineRootTitleRow
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
                   <h3>{node.title || "Untitled Node"}</h3>
                   {node.parentId !== null ? (
                     <span
@@ -190,7 +213,8 @@ export function CanvasStage({
                 aria-label={node.collapsed ? "Expand node" : "Collapse node"}
                 className={[
                   styles.mindNodeToggle,
-                  isLogicChart ? styles.mindNodeToggleOrganic : "",
+                  isLineLayout ? styles.mindNodeToggleOrganic : "",
+                  isMindMapLineLeft ? styles.mindNodeToggleOrganicLeft : "",
                   node.collapsed ? styles.mindNodeToggleCollapsed : "",
                 ]
                   .filter(Boolean)

@@ -122,6 +122,18 @@
   width: 220px;
 }
 
+.mindNodeClassicLine .mindNodeContent {
+  min-height: 76px;
+}
+
+.mindNodeClassicLineLeft h3 {
+  text-align: right;
+}
+
+.mindNodeClassicLineRoot .mindNodeContent {
+  justify-content: center;
+}
+
 .mindNodeFocusSelected,
 .mindNodeFocusLineage {
   opacity: 1;
@@ -214,12 +226,27 @@
   width: 100%;
 }
 
+.mindNodeOrganicTitleRowReverse {
+  flex-direction: row-reverse;
+}
+
+.mindNodeClassicLineRootTitleRow {
+  justify-content: center;
+}
+
 .mindNodeOrganicRule {
   flex: 1 1 auto;
   height: 3px;
   border-radius: 999px;
   background: var(--organic-accent, rgba(255, 255, 255, 0.92));
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.mindNodeClassicLineRoot h3 {
+  text-align: center;
+  font-size: 2.12rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
 }
 
 .mindNodeNotes {
@@ -276,6 +303,11 @@
   bottom: 18px;
   border-color: rgba(255, 255, 255, 0.12);
   background: rgba(8, 14, 24, 0.42);
+}
+
+.mindNodeToggleOrganicLeft {
+  right: auto;
+  left: 0;
 }
 
 .mindNodeToggleOrganic:hover {

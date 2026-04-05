@@ -1,5 +1,6 @@
 import {
   LOGIC_CHART_LINE_LAYOUT,
+  MINDMAP_LINE_LAYOUT,
   NODE_COLORS,
   getMindMapLayoutType,
   getBranchDirection,
@@ -26,6 +27,7 @@ type ExportSnapshot = {
   height: number;
   layoutType: MindMapLayoutType;
   nodes: Array<{
+    direction: -1 | 1;
     node: MindMapNode;
     x: number;
     y: number;
@@ -51,6 +53,7 @@ const BADGE_FONT = `600 11px ${FONT_FAMILY}`;
 const LOGIC_CHART_FONT_FAMILY = "'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif";
 const LOGIC_CHART_TITLE_FONT = `700 28px ${LOGIC_CHART_FONT_FAMILY}`;
 const LOGIC_CHART_BRANCH_FONT = `600 17px ${LOGIC_CHART_FONT_FAMILY}`;
+const MINDMAP_LINE_BRANCH_FONT = `600 18px ${LOGIC_CHART_FONT_FAMILY}`;
 
 const EXPORT_NODE_GRADIENTS: Record<NodeColor, NodeGradient> = {
   slate: {
@@ -166,6 +169,10 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
     ]),
   ) as Record<string, Position>;
   const nodes = nodeIds.map((nodeId) => ({
+    direction:
+      document.nodes[nodeId].parentId === null
+        ? 1
+        : getBranchDirection(document, nodeId),
     node: document.nodes[nodeId],
     x: normalizedPositions[nodeId].x,
     y: normalizedPositions[nodeId].y,
@@ -235,6 +242,8 @@ function buildSvgMarkup(snapshot: ExportSnapshot): string {
     .map((snapshotNode) =>
       snapshot.layoutType === LOGIC_CHART_LINE_LAYOUT
         ? buildLogicChartNodeMarkup(snapshotNode)
+        : snapshot.layoutType === MINDMAP_LINE_LAYOUT
+          ? buildMindMapLineNodeMarkup(snapshotNode)
         : buildMindMapNodeMarkup(snapshotNode),
     )
     .join("");
@@ -417,6 +426,90 @@ function buildLogicChartNodeMarkup(
       />
       `
       }
+    </g>
+  `;
+}
+
+function buildMindMapLineNodeMarkup(
+  snapshotNode: ExportSnapshot["nodes"][number],
+): string {
+  const { direction, node, x, y } = snapshotNode;
+  const title = escapeXml(node.title.trim() || "Untitled Node");
+  const isRoot = node.parentId === null;
+  const accent = NODE_COLORS[node.color].accent;
+
+  if (isRoot) {
+    return `
+    <g transform="translate(${x} ${y})">
+      <text
+        fill="#ffffff"
+        font-family="${LOGIC_CHART_FONT_FAMILY}"
+        font-size="30"
+        font-weight="700"
+        text-anchor="middle"
+        x="${NODE_WIDTH / 2}"
+        y="44"
+      >${title}</text>
+    </g>
+  `;
+  }
+
+  const titleWidth = Math.min(
+    measureTextWidth(node.title.trim() || "Untitled Node", MINDMAP_LINE_BRANCH_FONT),
+    NODE_WIDTH - 20,
+  );
+  const textY = 38;
+
+  if (direction === -1) {
+    const lineEndX = Math.max(0, NODE_WIDTH - titleWidth - 18);
+
+    return `
+    <g transform="translate(${x} ${y})">
+      <line
+        stroke="${accent}"
+        stroke-linecap="round"
+        stroke-opacity="0.92"
+        stroke-width="3.4"
+        x1="0"
+        x2="${lineEndX}"
+        y1="${textY + 6}"
+        y2="${textY + 6}"
+      />
+      <text
+        fill="#f5f7ff"
+        font-family="${LOGIC_CHART_FONT_FAMILY}"
+        font-size="18"
+        font-weight="600"
+        text-anchor="end"
+        x="${NODE_WIDTH}"
+        y="${textY}"
+      >${title}</text>
+    </g>
+  `;
+  }
+
+  const lineStartX = Math.min(titleWidth + 18, NODE_WIDTH - 24);
+
+  return `
+    <g transform="translate(${x} ${y})">
+      <text
+        fill="#f5f7ff"
+        font-family="${LOGIC_CHART_FONT_FAMILY}"
+        font-size="18"
+        font-weight="600"
+        x="0"
+        y="${textY}"
+      >${title}</text>
+      <line
+        stroke="${accent}"
+        stroke-linecap="round"
+        stroke-opacity="0.92"
+        stroke-width="3.4"
+        x1="${lineStartX}"
+        x2="${NODE_WIDTH}"
+        y1="${textY + 6}"
+        y2="${textY + 6}"
+      />
     </g>
   `;
 }
