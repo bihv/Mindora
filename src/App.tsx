@@ -42,6 +42,7 @@ import { useDesktopAppMenu } from "./features/editor/hooks/useDesktopAppMenu";
 import { useKeyboardShortcuts } from "./features/editor/hooks/useKeyboardShortcuts";
 import { useMindMapEditor } from "./features/editor/hooks/useMindMapEditor";
 import { useNodeDragging } from "./features/editor/hooks/useNodeDragging";
+import { useWindowTitle } from "./features/editor/hooks/useWindowTitle";
 
 function App() {
   const centerOnNodeRef = useRef<(nodeId: string) => boolean>(() => false);
@@ -281,7 +282,7 @@ function App() {
     undo: editor.undo,
   });
 
-  const desktopMenuEnabled = useDesktopAppMenu({
+  useDesktopAppMenu({
     canRedo: editor.editorState.historyIndex < editor.editorState.history.length - 1,
     canUndo: editor.editorState.historyIndex > 0,
     currentFileName: editor.fileState.currentFileName,
@@ -297,6 +298,15 @@ function App() {
     onSaveFile: editor.handleSaveFile,
     onToggleOutline: editor.toggleOutline,
     onUndo: editor.undo,
+  });
+  const shouldShowDocumentStatus = editor.fileState.lastError !== null;
+
+  useWindowTitle({
+    currentDocumentTitle: editor.mindMap.title,
+    currentFileName: editor.fileState.currentFileName,
+    hasUnsavedFileChanges: editor.hasUnsavedFileChanges,
+    isFileActionPending: editor.fileState.isPending,
+    lastFileActionError: editor.fileState.lastError,
   });
 
   const totalNodes = Object.keys(editor.mindMap.nodes).length;
@@ -334,15 +344,16 @@ function App() {
       onWheel={canvasState.handleViewportWheel}
       ref={canvasState.viewportRef}
     >
-      <DocumentStatus
-        currentFileName={editor.fileState.currentFileName}
-        hasUnsavedFileChanges={editor.hasUnsavedFileChanges}
-        isFileActionPending={editor.fileState.isPending}
-        lastFileActionError={editor.fileState.lastError}
-        onOpenBackgroundDialog={editor.openBackgroundDialog}
-        onOpenLayoutDialog={editor.openLayoutDialog}
-        showCanvasActions={!desktopMenuEnabled}
-      />
+      {shouldShowDocumentStatus ? (
+        <DocumentStatus
+          currentFileName={editor.fileState.currentFileName}
+          hasUnsavedFileChanges={editor.hasUnsavedFileChanges}
+          isFileActionPending={editor.fileState.isPending}
+          lastFileActionError={editor.fileState.lastError}
+          onOpenBackgroundDialog={editor.openBackgroundDialog}
+          onOpenLayoutDialog={editor.openLayoutDialog}
+        />
+      ) : null}
 
       <CanvasStage
         backgroundPresetId={editor.backgroundPresetId}
