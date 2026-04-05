@@ -2,10 +2,16 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import {
   hydrateMindMapDocument,
-  isMindMapDocument,
   type MindMapDocument,
 } from "../../mindmap";
 import type { ExportFormat } from "./exportTypes";
+import {
+  MINDORA_FILE_EXTENSION,
+  MINDORA_FILE_EXTENSION_WITH_DOT,
+  MINDORA_FILE_MIME_TYPE,
+  parseMindMapFileContents,
+  serializeMindMapFileContents,
+} from "./secureFile";
 
 type BrowserFileWritable = {
   close: () => Promise<void>;
@@ -78,7 +84,7 @@ const FILE_TYPES = [
   {
     description: "Mindora map",
     accept: {
-      "application/json": [".mindora.json", ".json"],
+      [MINDORA_FILE_MIME_TYPE]: [MINDORA_FILE_EXTENSION_WITH_DOT],
     },
   },
 ] satisfies PickerFileType[];
@@ -106,7 +112,7 @@ export async function openMindMapFile(): Promise<OpenMindMapFileResult | null> {
 
     const file = await fileHandle.getFile();
     const contents = await file.text();
-    const document = parseMindMapDocument(contents);
+    const document = await parseMindMapDocument(contents);
 
     return {
       contents: serializeMindMapDocument(document),
@@ -122,7 +128,7 @@ export async function openMindMapFile(): Promise<OpenMindMapFileResult | null> {
   }
 
   const contents = await file.text();
-  const document = parseMindMapDocument(contents);
+  const document = await parseMindMapDocument(contents);
   return {
     contents: serializeMindMapDocument(document),
     document,
@@ -146,25 +152,27 @@ export async function saveMindMapFile(params: {
   existingFileHandle: MindMapFileHandle | null;
 }): Promise<SaveMindMapFileResult | null> {
   const { document, existingFileHandle } = params;
-  const contents = serializeMindMapDocument(document);
+  const fileContents = await serializeMindMapFileContents(document);
+  const snapshotContents = serializeMindMapDocument(document);
 
   if (isTauri()) {
     return saveMindMapFileDesktop({
-      contents,
+      contents: fileContents,
       document,
       existingFileHandle:
         typeof existingFileHandle === "string" ? existingFileHandle : null,
+      snapshotContents,
     });
   }
 
   const pickerWindow = window as WindowWithFilePicker;
 
   if (existingFileHandle && typeof existingFileHandle !== "string") {
-    await writeToHandle(existingFileHandle, contents);
+    await writeToHandle(existingFileHandle, fileContents);
     const file = await existingFileHandle.getFile();
 
     return {
-      contents,
+      contents: snapshotContents,
       fileHandle: existingFileHandle,
       fileName: file.name,
     };
@@ -176,19 +184,19 @@ export async function saveMindMapFile(params: {
       suggestedName: buildMindMapFileName(document.title),
       types: FILE_TYPES,
     });
-    await writeToHandle(fileHandle, contents);
+    await writeToHandle(fileHandle, fileContents);
     const file = await fileHandle.getFile();
 
     return {
-      contents,
+      contents: snapshotContents,
       fileHandle,
       fileName: file.name,
     };
   }
 
-  downloadFile(buildMindMapFileName(document.title), contents);
+  downloadFile(buildMindMapFileName(document.title), fileContents, MINDORA_FILE_MIME_TYPE);
   return {
-    contents,
+    contents: snapshotContents,
     fileHandle: null,
     fileName: buildMindMapFileName(document.title),
   };
@@ -253,20 +261,8 @@ export function loadRecentMindMapFiles(): RecentMindMapFile[] {
   }
 }
 
-function parseMindMapDocument(contents: string): MindMapDocument {
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(contents);
-  } catch {
-    throw new Error("File is not valid JSON.");
-  }
-
-  if (!isMindMapDocument(parsed)) {
-    throw new Error("File does not contain a valid Mindora map.");
-  }
-
-  return hydrateMindMapDocument(parsed);
+async function parseMindMapDocument(contents: string): Promise<MindMapDocument> {
+  return parseMindMapFileContents(contents);
 }
 
 function buildMindMapFileStem(title: string): string {
@@ -278,7 +274,7 @@ function buildMindMapFileStem(title: string): string {
 }
 
 function buildMindMapFileName(title: string): string {
-  return `${buildMindMapFileStem(title) || "mindora-map"}.mindora.json`;
+  return `${buildMindMapFileStem(title) || "mindora-map"}${MINDORA_FILE_EXTENSION_WITH_DOT}`;
 }
 
 function buildMindMapExportFileName(
@@ -328,7 +324,7 @@ async function openMindMapFileDesktop(): Promise<OpenMindMapFileResult | null> {
     filters: [
       {
         name: "Mindora map",
-        extensions: ["json"],
+        extensions: [MINDORA_FILE_EXTENSION],
       },
     ],
     multiple: false,
@@ -346,24 +342,27 @@ async function saveMindMapFileDesktop(params: {
   contents: string;
   document: MindMapDocument;
   existingFileHandle: string | null;
+  snapshotContents: string;
 }): Promise<SaveMindMapFileResult | null> {
-  const { contents, document, existingFileHandle } = params;
-  const filePath =
+  const { contents, document, existingFileHandle, snapshotContents } = params;
+  const selectedPath =
     existingFileHandle ??
     (await saveDialog({
       defaultPath: buildMindMapFileName(document.title),
       filters: [
         {
           name: "Mindora map",
-          extensions: ["json"],
+          extensions: [MINDORA_FILE_EXTENSION],
         },
       ],
       title: "Save Mindora Map",
     }));
 
-  if (!filePath) {
+  if (!selectedPath) {
     return null;
   }
+
+  const filePath = ensureFileExtension(selectedPath, MINDORA_FILE_EXTENSION);
 
   await invoke("write_mindmap_file", {
     contents,
@@ -372,7 +371,7 @@ async function saveMindMapFileDesktop(params: {
   rememberRecentMindMapFile(filePath);
 
   return {
-    contents,
+    contents: snapshotContents,
     fileHandle: filePath,
     fileName: getFileNameFromPath(filePath),
   };
@@ -412,7 +411,7 @@ async function pickFileWithInput(): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".mindora.json,.json,application/json";
+    input.accept = `${MINDORA_FILE_EXTENSION_WITH_DOT},${MINDORA_FILE_MIME_TYPE}`;
 
     input.addEventListener(
       "change",
@@ -442,10 +441,14 @@ async function writeToHandle(
   await writable.close();
 }
 
-function downloadFile(fileName: string, contents: string | Blob): void {
+function downloadFile(
+  fileName: string,
+  contents: string | Blob,
+  mimeType = "application/octet-stream",
+): void {
   const blob =
     typeof contents === "string"
-      ? new Blob([contents], { type: "application/json" })
+      ? new Blob([contents], { type: mimeType })
       : contents;
   const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -474,7 +477,7 @@ async function readMindMapFileDesktop(
   const contents = await invoke<string>("read_mindmap_file", {
     path,
   });
-  const document = parseMindMapDocument(contents);
+  const document = await parseMindMapDocument(contents);
   rememberRecentMindMapFile(path);
 
   return {

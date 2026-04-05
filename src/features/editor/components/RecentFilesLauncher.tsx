@@ -49,7 +49,7 @@ export function RecentFilesLauncher({
               {isFileActionPending ? "Opening..." : "Browse files"}
             </button>
           </div>
-          <span className={styles.hint}>Supported: `.mindora.json`, `.json`</span>
+          <span className={styles.hint}>Supported: `.mindora`</span>
         </div>
 
         {lastFileActionError ? (
