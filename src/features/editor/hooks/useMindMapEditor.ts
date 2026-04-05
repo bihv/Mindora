@@ -1,22 +1,29 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   cloneMindMapDocument,
   createBlankMindMap,
   createChildNode,
   createSiblingNode,
   deleteNode,
-  loadStoredMindMap,
-  loadStoredTemplateId,
   resolveSelectedNodeId,
-  saveMindMap,
-  saveTemplateId,
   updateNodePosition,
   type MindMapDocument,
   type NodeColor,
 } from "../../../mindmap";
 import { HISTORY_LIMIT } from "../constants";
+import {
+  loadRecentMindMapFiles,
+  openMindMapFile,
+  openMindMapFileFromPath,
+  saveMindMapFile,
+  serializeMindMapDocument,
+} from "../filePersistence";
 import { buildAutoLayoutPositions } from "../layout";
-import type { EditorState, SelectNodeOptions } from "../types";
+import type {
+  EditorFileState,
+  EditorState,
+  SelectNodeOptions,
+} from "../types";
 
 type UseMindMapEditorArgs = {
   centerOnNode: (nodeId: string) => boolean;
@@ -24,18 +31,26 @@ type UseMindMapEditorArgs = {
 
 export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const [editorState, setEditorState] = useState<EditorState>(() => {
-    const storedDocument = loadStoredMindMap() ?? createBlankMindMap("Focus Map");
-    const activeTemplateId = loadStoredTemplateId() ?? "blank";
+    const initialDocument = createBlankMindMap("Focus Map");
 
     return {
-      history: [storedDocument],
+      history: [initialDocument],
       historyIndex: 0,
-      selectedNodeId: storedDocument.rootId,
+      selectedNodeId: initialDocument.rootId,
       hasActiveSelection: true,
       isNodeMenuOpen: false,
       searchQuery: "",
-      activeTemplateId,
+      activeTemplateId: "blank",
     };
+  });
+  const [fileState, setFileState] = useState<EditorFileState>({
+    currentFileHandle: null,
+    currentFileName: null,
+    isPending: false,
+    isStartupScreenVisible: true,
+    lastError: null,
+    lastSavedSnapshot: null,
+    recentFiles: loadRecentMindMapFiles(),
   });
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
@@ -290,6 +305,148 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     [commitDocument],
   );
 
+  const replaceDocument = useCallback(
+    (
+      document: MindMapDocument,
+      options?: {
+        fileHandle?: EditorFileState["currentFileHandle"];
+        fileName?: string | null;
+        lastSavedSnapshot?: string | null;
+        recentFiles?: EditorFileState["recentFiles"];
+      },
+    ) => {
+      const nextSelectedNodeId = resolveSelectedNodeId(document, document.rootId);
+
+      setEditorState((current) => ({
+        ...current,
+        history: [document],
+        historyIndex: 0,
+        selectedNodeId: nextSelectedNodeId,
+        hasActiveSelection: true,
+        isNodeMenuOpen: false,
+        searchQuery: "",
+        activeTemplateId: "blank",
+      }));
+      setFileState((current) => ({
+        ...current,
+        currentFileHandle: options?.fileHandle ?? null,
+        currentFileName: options?.fileName ?? null,
+        isPending: false,
+        isStartupScreenVisible: false,
+        lastError: null,
+        lastSavedSnapshot: options?.lastSavedSnapshot ?? null,
+        recentFiles: options?.recentFiles ?? current.recentFiles,
+      }));
+      setIsOutlineOpen(false);
+      setIsInspectorOpen(false);
+
+      requestAnimationFrame(() => {
+        centerOnNode(nextSelectedNodeId);
+      });
+    },
+    [centerOnNode],
+  );
+
+  const handleOpenFile = useCallback(async () => {
+    setFileState((current) => ({
+      ...current,
+      isPending: true,
+      lastError: null,
+    }));
+
+    try {
+      const result = await openMindMapFile();
+      if (!result) {
+        setFileState((current) => ({
+          ...current,
+          isPending: false,
+        }));
+        return;
+      }
+
+      replaceDocument(result.document, {
+        fileHandle: result.fileHandle,
+        fileName: result.fileName,
+        lastSavedSnapshot: result.contents,
+        recentFiles: loadRecentMindMapFiles(),
+      });
+    } catch (error) {
+      setFileState((current) => ({
+        ...current,
+        isPending: false,
+        lastError: getFileErrorMessage(error, "Unable to open the selected file."),
+      }));
+    }
+  }, [replaceDocument]);
+
+  const handleOpenRecentFile = useCallback(
+    async (path: string) => {
+      setFileState((current) => ({
+        ...current,
+        isPending: true,
+        lastError: null,
+      }));
+
+      try {
+        const result = await openMindMapFileFromPath(path);
+
+        replaceDocument(result.document, {
+          fileHandle: result.fileHandle,
+          fileName: result.fileName,
+          lastSavedSnapshot: result.contents,
+          recentFiles: loadRecentMindMapFiles(),
+        });
+      } catch (error) {
+        setFileState((current) => ({
+          ...current,
+          isPending: false,
+          lastError: getFileErrorMessage(error, "Unable to open the selected file."),
+          recentFiles: loadRecentMindMapFiles(),
+        }));
+      }
+    },
+    [replaceDocument],
+  );
+
+  const handleSaveFile = useCallback(async () => {
+    setFileState((current) => ({
+      ...current,
+      isPending: true,
+      lastError: null,
+    }));
+
+    try {
+      const result = await saveMindMapFile({
+        document: mindMap,
+        existingFileHandle: fileState.currentFileHandle,
+      });
+      if (!result) {
+        setFileState((current) => ({
+          ...current,
+          isPending: false,
+        }));
+        return;
+      }
+
+      setFileState((current) => ({
+        ...current,
+        currentFileHandle: result.fileHandle,
+        currentFileName: result.fileName,
+        isPending: false,
+        isStartupScreenVisible: false,
+        lastError: null,
+        lastSavedSnapshot: result.contents,
+        recentFiles: loadRecentMindMapFiles(),
+      }));
+    } catch (error) {
+      setFileState((current) => ({
+        ...current,
+        isPending: false,
+        lastError: getFileErrorMessage(error, "Unable to save the current map."),
+      }));
+    }
+  }, [fileState.currentFileHandle, mindMap]);
+
   const setSearchQuery = useCallback((value: string) => {
     setEditorState((current) => ({
       ...current,
@@ -301,10 +458,13 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     setIsOutlineOpen((current) => !current);
   }, []);
 
-  useEffect(() => {
-    saveMindMap(mindMap);
-    saveTemplateId(editorState.activeTemplateId);
-  }, [editorState.activeTemplateId, mindMap]);
+  const hasUnsavedFileChanges = useMemo(() => {
+    if (fileState.lastSavedSnapshot === null) {
+      return false;
+    }
+
+    return serializeMindMapDocument(mindMap) !== fileState.lastSavedSnapshot;
+  }, [fileState.lastSavedSnapshot, mindMap]);
 
   return useMemo(
     () => ({
@@ -312,15 +472,20 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       closeNodeMenu,
       commitDocument,
       editorState,
+      fileState,
       handleAddChild,
       handleAddSibling,
       handleAutoLayout,
       handleDeleteSelected,
       handleNodeColorChange,
       handleNodeNotesChange,
+      handleOpenFile,
+      handleOpenRecentFile,
+      handleSaveFile,
       handleNodeTitleChange,
       handleToggleCollapsed,
       hasActiveSelection,
+      hasUnsavedFileChanges,
       isInspectorOpen,
       isOutlineOpen,
       mindMap,
@@ -339,15 +504,20 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       closeNodeMenu,
       commitDocument,
       editorState,
+      fileState,
       handleAddChild,
       handleAddSibling,
       handleAutoLayout,
       handleDeleteSelected,
       handleNodeColorChange,
       handleNodeNotesChange,
+      handleOpenFile,
+      handleOpenRecentFile,
+      handleSaveFile,
       handleNodeTitleChange,
       handleToggleCollapsed,
       hasActiveSelection,
+      hasUnsavedFileChanges,
       isInspectorOpen,
       isOutlineOpen,
       mindMap,
@@ -360,4 +530,32 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       undo,
     ],
   );
+}
+
+function getFileErrorMessage(error: unknown, fallbackMessage: string): string {
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (error && typeof error === "object") {
+    const message = Reflect.get(error, "message");
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+
+    try {
+      const serialized = JSON.stringify(error);
+      if (serialized && serialized !== "{}") {
+        return serialized;
+      }
+    } catch {
+      // Ignore serialization failures and use the fallback below.
+    }
+  }
+
+  return fallbackMessage;
 }

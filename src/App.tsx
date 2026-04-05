@@ -25,13 +25,15 @@ import {
 } from "./features/editor/selectors";
 import type { Position } from "./features/editor/types";
 import { clamp } from "./features/editor/utils";
-import { CanvasControls } from "./features/editor/components/CanvasControls";
 import { CanvasStage } from "./features/editor/components/CanvasStage";
+import { DocumentStatus } from "./features/editor/components/DocumentStatus";
 import { InspectorDrawer } from "./features/editor/components/InspectorDrawer";
 import { MindMapMinimap } from "./features/editor/components/MindMapMinimap";
 import { NodeContextMenu } from "./features/editor/components/NodeContextMenu";
 import { OutlineDrawer } from "./features/editor/components/OutlineDrawer";
+import { RecentFilesLauncher } from "./features/editor/components/RecentFilesLauncher";
 import { useCanvasState } from "./features/editor/hooks/useCanvasState";
+import { useDesktopAppMenu } from "./features/editor/hooks/useDesktopAppMenu";
 import { useKeyboardShortcuts } from "./features/editor/hooks/useKeyboardShortcuts";
 import { useMindMapEditor } from "./features/editor/hooks/useMindMapEditor";
 import { useNodeDragging } from "./features/editor/hooks/useNodeDragging";
@@ -245,11 +247,27 @@ function App() {
     handleAddChild: editor.handleAddChild,
     handleAddSibling: editor.handleAddSibling,
     handleDeleteSelected: editor.handleDeleteSelected,
+    handleOpenFile: editor.handleOpenFile,
+    handleSaveFile: editor.handleSaveFile,
     hasActiveSelection: editor.hasActiveSelection,
     redo: editor.redo,
     selectedNodeId: editor.selectedNodeId,
     selectedNodeIsRoot: editor.selectedNode.parentId === null,
     undo: editor.undo,
+  });
+
+  useDesktopAppMenu({
+    canRedo: editor.editorState.historyIndex < editor.editorState.history.length - 1,
+    canUndo: editor.editorState.historyIndex > 0,
+    currentFileName: editor.fileState.currentFileName,
+    isFileActionPending: editor.fileState.isPending,
+    isOutlineOpen: editor.isOutlineOpen,
+    onAutoLayout: editor.handleAutoLayout,
+    onOpenFile: editor.handleOpenFile,
+    onRedo: editor.redo,
+    onSaveFile: editor.handleSaveFile,
+    onToggleOutline: editor.toggleOutline,
+    onUndo: editor.undo,
   });
 
   const totalNodes = Object.keys(editor.mindMap.nodes).length;
@@ -264,16 +282,33 @@ function App() {
         );
   const selectedNodeMenuTop = clamp(selectedNodePosition.y, 24, canvasHeight - 24);
 
+  if (editor.fileState.isStartupScreenVisible) {
+    return (
+      <RecentFilesLauncher
+        isFileActionPending={editor.fileState.isPending}
+        lastFileActionError={editor.fileState.lastError}
+        onOpenFile={() => {
+          void editor.handleOpenFile();
+        }}
+        onOpenRecentFile={(path) => {
+          void editor.handleOpenRecentFile(path);
+        }}
+        recentFiles={editor.fileState.recentFiles}
+      />
+    );
+  }
+
   return (
     <div
       className="canvas-viewport"
       onWheel={canvasState.handleViewportWheel}
       ref={canvasState.viewportRef}
     >
-      <CanvasControls
-        isOutlineOpen={editor.isOutlineOpen}
-        onAutoLayout={editor.handleAutoLayout}
-        onToggleOutline={editor.toggleOutline}
+      <DocumentStatus
+        currentFileName={editor.fileState.currentFileName}
+        hasUnsavedFileChanges={editor.hasUnsavedFileChanges}
+        isFileActionPending={editor.fileState.isPending}
+        lastFileActionError={editor.fileState.lastError}
       />
 
       <CanvasStage

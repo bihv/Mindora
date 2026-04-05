@@ -1,4 +1,5 @@
 import type { MindMapDocument, MindMapNode } from "../../mindmap";
+import type { MindMapFileHandle, RecentMindMapFile } from "./filePersistence";
 
 export type Position = {
   x: number;
@@ -83,3 +84,13 @@ export type MinimapData = {
 };
 
 export type SearchMatch = MindMapNode;
+
+export type EditorFileState = {
+  currentFileHandle: MindMapFileHandle | null;
+  currentFileName: string | null;
+  isPending: boolean;
+  isStartupScreenVisible: boolean;
+  lastError: string | null;
+  lastSavedSnapshot: string | null;
+  recentFiles: RecentMindMapFile[];
+};

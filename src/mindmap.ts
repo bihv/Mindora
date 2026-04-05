@@ -330,14 +330,7 @@ export function loadStoredMindMap(): MindMapDocument | null {
 
   try {
     const parsed = JSON.parse(raw) as MindMapDocument;
-    if (
-      parsed &&
-      typeof parsed.rootId === "string" &&
-      typeof parsed.title === "string" &&
-      parsed.nodes &&
-      typeof parsed.nodes === "object" &&
-      parsed.nodes[parsed.rootId]
-    ) {
+    if (isMindMapDocument(parsed)) {
       return parsed;
     }
   } catch {
@@ -357,6 +350,50 @@ export function loadStoredTemplateId(): string | null {
 
 export function saveTemplateId(templateId: string): void {
   localStorage.setItem(TEMPLATE_KEY, templateId);
+}
+
+export function isMindMapDocument(value: unknown): value is MindMapDocument {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const document = value as Partial<MindMapDocument>;
+  if (
+    typeof document.id !== "string" ||
+    typeof document.title !== "string" ||
+    typeof document.rootId !== "string" ||
+    !document.nodes ||
+    typeof document.nodes !== "object"
+  ) {
+    return false;
+  }
+
+  const rootNode = document.nodes[document.rootId];
+  if (!isMindMapNode(rootNode)) {
+    return false;
+  }
+
+  return Object.values(document.nodes).every(isMindMapNode);
+}
+
+function isMindMapNode(value: unknown): value is MindMapNode {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const node = value as Partial<MindMapNode>;
+  return (
+    typeof node.id === "string" &&
+    typeof node.title === "string" &&
+    typeof node.notes === "string" &&
+    typeof node.color === "string" &&
+    typeof node.x === "number" &&
+    typeof node.y === "number" &&
+    (typeof node.parentId === "string" || node.parentId === null) &&
+    Array.isArray(node.childrenIds) &&
+    node.childrenIds.every((childId) => typeof childId === "string") &&
+    typeof node.collapsed === "boolean"
+  );
 }
 
 export const MIND_MAP_TEMPLATES: MindMapTemplate[] = [
