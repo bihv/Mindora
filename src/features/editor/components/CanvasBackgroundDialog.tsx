@@ -1,37 +1,30 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId } from "react";
 import {
   MINDMAP_BACKGROUND_PRESETS,
   getBackgroundPreviewStyle,
   type MindMapBackgroundPresetId,
 } from "../backgroundPresets";
+import drawerStyles from "./EditorDrawer.module.css";
 import styles from "./MindMapTypeDialog.module.css";
 
 type CanvasBackgroundDialogProps = {
   currentBackgroundPresetId: MindMapBackgroundPresetId;
+  initialBackgroundPresetId: MindMapBackgroundPresetId | null;
   isOpen: boolean;
-  onApply: (backgroundPresetId: MindMapBackgroundPresetId) => void;
+  onReset: () => void;
+  onSelect: (backgroundPresetId: MindMapBackgroundPresetId) => void;
   onClose: () => void;
 };
 
 export function CanvasBackgroundDialog({
   currentBackgroundPresetId,
+  initialBackgroundPresetId,
   isOpen,
-  onApply,
+  onReset,
+  onSelect,
   onClose,
 }: CanvasBackgroundDialogProps) {
   const titleId = useId();
-  const descriptionId = useId();
-  const [selectedBackgroundPresetId, setSelectedBackgroundPresetId] = useState(
-    currentBackgroundPresetId,
-  );
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    setSelectedBackgroundPresetId(currentBackgroundPresetId);
-  }, [currentBackgroundPresetId, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -54,112 +47,103 @@ export function CanvasBackgroundDialog({
     return null;
   }
 
-  const handleApply = () => {
-    if (selectedBackgroundPresetId !== currentBackgroundPresetId) {
-      onApply(selectedBackgroundPresetId);
-    }
-
-    onClose();
-  };
+  const canReset =
+    initialBackgroundPresetId !== null &&
+    initialBackgroundPresetId !== currentBackgroundPresetId;
 
   return (
-    <div className={styles.overlay} onClick={onClose} role="presentation">
+    <aside
+      aria-labelledby={titleId}
+      className={[
+        drawerStyles.canvasDrawer,
+        drawerStyles.canvasDrawerRight,
+        drawerStyles.isOpen,
+      ].join(" ")}
+      data-native-scroll="true"
+      onWheel={(event) => event.stopPropagation()}
+    >
       <section
-        aria-describedby={descriptionId}
         aria-labelledby={titleId}
-        aria-modal="true"
-        className={styles.dialog}
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
+        className={[
+          drawerStyles.floatingPanel,
+          styles.layoutPanel,
+          styles.backgroundPanel,
+        ].join(" ")}
+        role="region"
       >
-        <button
-          aria-label="Close background dialog"
-          className={styles.closeButton}
-          onClick={onClose}
-          type="button"
-        >
-          ×
-        </button>
+        <header className={styles.layoutPanelHeader}>
+          <div className={[styles.header, styles.backgroundPanelHeader].join(" ")}>
+            <span className={styles.eyebrow} id={titleId}>
+              Canvas Background
+            </span>
+          </div>
 
-        <header className={styles.header}>
-          <span className={styles.eyebrow}>Canvas Background</span>
-          <h2 id={titleId}>Choose a background</h2>
-          <p id={descriptionId}>
-            Change the canvas atmosphere without moving any nodes. The selected
-            background is also used for exports.
-          </p>
+          <button
+            aria-label="Close background panel"
+            className={styles.panelCloseButton}
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
         </header>
 
-        <section className={styles.groupSection}>
-          <div className={styles.groupHeader}>
-            <span aria-hidden="true" className={styles.groupCaret} />
-            <h3>Background Presets</h3>
-          </div>
+        <div className={styles.layoutPanelActions}>
+          <button
+            className={styles.secondaryButton}
+            disabled={!canReset}
+            onClick={onReset}
+            type="button"
+          >
+            Reset
+          </button>
+        </div>
 
-          <div className={styles.backgroundGrid}>
-            {MINDMAP_BACKGROUND_PRESETS.map((background) => {
-              const isSelected = selectedBackgroundPresetId === background.id;
-              const isCurrent = currentBackgroundPresetId === background.id;
+        <div className={styles.backgroundPanelBody}>
+          <section className={styles.groupSection}>
+            <div className={styles.groupHeader}>
+              <span aria-hidden="true" className={styles.groupCaret} />
+              <h3>Background Presets</h3>
+            </div>
 
-              return (
-                <button
-                  aria-label={`Canvas background ${background.label}`}
-                  aria-pressed={isSelected}
-                  className={[
-                    styles.backgroundCard,
-                    isSelected ? styles.backgroundCardSelected : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  key={background.id}
-                  onClick={() => setSelectedBackgroundPresetId(background.id)}
-                  type="button"
-                >
-                  {isCurrent ? (
-                    <span className={styles.currentBadge}>Current</span>
-                  ) : null}
-
-                  <span
-                    aria-hidden="true"
-                    className={styles.backgroundPreview}
-                    style={getBackgroundPreviewStyle(background.id)}
-                  />
-
-                  <span className={styles.backgroundMeta}>
-                    <strong>{background.label}</strong>
-                    <span>{background.description}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <footer className={styles.footer}>
-          <div className={styles.footerText}>
-            <strong>Tip:</strong> You can reopen this anytime from the desktop
-            menu: Layout → Background...
-          </div>
-          <div className={styles.actions}>
-            <button
-              className={styles.secondaryButton}
-              onClick={onClose}
-              type="button"
+            <div
+              className={[styles.backgroundGrid, styles.backgroundGridPanel].join(" ")}
             >
-              Cancel
-            </button>
-            <button
-              className={styles.primaryButton}
-              onClick={handleApply}
-              type="button"
-            >
-              {selectedBackgroundPresetId === currentBackgroundPresetId
-                ? "Done"
-                : "Apply background"}
-            </button>
-          </div>
-        </footer>
+              {MINDMAP_BACKGROUND_PRESETS.map((background) => {
+                const isSelected = currentBackgroundPresetId === background.id;
+
+                return (
+                  <button
+                    aria-label={`Canvas background ${background.label}`}
+                    aria-pressed={isSelected}
+                    className={[
+                      styles.backgroundCard,
+                      styles.backgroundCardPanel,
+                      isSelected ? styles.backgroundCardSelected : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    key={background.id}
+                    onClick={() => onSelect(background.id)}
+                    type="button"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={styles.backgroundPreview}
+                      style={getBackgroundPreviewStyle(background.id)}
+                    />
+
+                    <span className={styles.backgroundMeta}>
+                      <strong>{background.label}</strong>
+                      <span>{background.description}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
       </section>
-    </div>
+    </aside>
   );
 }

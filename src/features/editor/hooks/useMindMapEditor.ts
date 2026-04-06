@@ -78,6 +78,8 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const [isLayoutDialogOpen, setIsLayoutDialogOpen] = useState(false);
   const [layoutPanelInitialLayoutType, setLayoutPanelInitialLayoutType] =
     useState<MindMapLayoutType | null>(null);
+  const [backgroundPanelInitialPresetId, setBackgroundPanelInitialPresetId] =
+    useState<MindMapBackgroundPresetId | null>(null);
   const [isBackgroundDialogOpen, setIsBackgroundDialogOpen] = useState(false);
 
   const mindMap = editorState.history[editorState.historyIndex];
@@ -583,6 +585,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       setIsInspectorOpen(false);
       setIsLayoutDialogOpen(false);
       setLayoutPanelInitialLayoutType(null);
+      setBackgroundPanelInitialPresetId(null);
       setIsBackgroundDialogOpen(false);
 
       requestAnimationFrame(() => {
@@ -751,6 +754,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       setLayoutPanelInitialLayoutType(layoutType);
     }
     setIsBackgroundDialogOpen(false);
+    setBackgroundPanelInitialPresetId(null);
     setIsInspectorOpen(false);
     setIsLayoutDialogOpen(true);
   }, [isLayoutDialogOpen, layoutType]);
@@ -774,12 +778,32 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const openBackgroundDialog = useCallback(() => {
     setIsLayoutDialogOpen(false);
     setLayoutPanelInitialLayoutType(null);
+    if (!isBackgroundDialogOpen) {
+      setBackgroundPanelInitialPresetId(backgroundPresetId);
+    }
+    setIsInspectorOpen(false);
     setIsBackgroundDialogOpen(true);
-  }, []);
+  }, [backgroundPresetId, isBackgroundDialogOpen]);
 
   const closeBackgroundDialog = useCallback(() => {
     setIsBackgroundDialogOpen(false);
+    setBackgroundPanelInitialPresetId(null);
   }, []);
+
+  const resetBackgroundDialog = useCallback(() => {
+    if (
+      backgroundPanelInitialPresetId === null ||
+      backgroundPanelInitialPresetId === backgroundPresetId
+    ) {
+      return;
+    }
+
+    handleBackgroundPresetChange(backgroundPanelInitialPresetId);
+  }, [
+    backgroundPanelInitialPresetId,
+    backgroundPresetId,
+    handleBackgroundPresetChange,
+  ]);
 
   const hasUnsavedFileChanges = useMemo(() => {
     if (fileState.lastSavedSnapshot === null) {
@@ -822,6 +846,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       hasActiveSelection,
       hasUnsavedFileChanges,
       backgroundPresetId,
+      backgroundPanelInitialPresetId,
       isBackgroundDialogOpen,
       isInspectorOpen,
       isLayoutDialogOpen,
@@ -832,6 +857,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       openBackgroundDialog,
       openLayoutDialog,
       redo,
+      resetBackgroundDialog,
       resetLayoutDialog,
       selectNode,
       selectedNode,
@@ -874,6 +900,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       hasActiveSelection,
       hasUnsavedFileChanges,
       backgroundPresetId,
+      backgroundPanelInitialPresetId,
       isBackgroundDialogOpen,
       isInspectorOpen,
       isLayoutDialogOpen,
@@ -884,6 +911,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       openBackgroundDialog,
       openLayoutDialog,
       redo,
+      resetBackgroundDialog,
       resetLayoutDialog,
       selectNode,
       selectedNode,

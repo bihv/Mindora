@@ -73,11 +73,35 @@
   gap: 14px;
 }
 
+.backgroundPanel {
+  width: 468px;
+  max-width: min(468px, calc(100vw - 52px));
+  max-height: calc(
+    100vh - var(--inspector-top-space, 22px) - var(--inspector-bottom-space, 22px)
+  );
+  gap: 16px;
+  overflow: hidden;
+}
+
+.backgroundPanelBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-right: -4px;
+}
+
 .layoutPanelHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+}
+
+.backgroundPanelHeader {
+  max-width: none;
 }
 
 .panelCloseButton {
@@ -269,28 +293,6 @@
     0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-.currentBadge {
-  position: absolute;
-  top: 18px;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 11px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  backdrop-filter: blur(10px);
-}
-
-.currentBadge {
-  right: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(14, 18, 25, 0.68);
-  color: rgba(243, 247, 255, 0.96);
-}
-
 .previewFrame {
   --preview-svg-canvas: rgba(251, 252, 254, 0.98);
   --preview-svg-surface-stroke: rgba(255, 255, 255, 0.96);
@@ -447,7 +449,14 @@
   gap: 16px;
 }
 
+.backgroundGridPanel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .backgroundCard {
+  --selection-accent: rgba(145, 176, 255, 0.92);
+  --selection-accent-border: rgba(198, 214, 255, 0.96);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -466,6 +475,24 @@
     box-shadow 180ms ease;
 }
 
+.backgroundCard::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.backgroundCardPanel {
+  gap: 10px;
+  padding: 10px;
+  border-radius: 20px;
+}
+
 .backgroundCard:hover {
   border-color: rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.06);
@@ -474,11 +501,14 @@
 }
 
 .backgroundCardSelected {
-  border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--selection-accent-border);
+}
+
+.backgroundCardSelected::after {
+  opacity: 1;
   box-shadow:
-    inset 0 0 0 2px rgba(19, 24, 31, 0.92),
-    0 20px 40px rgba(0, 0, 0, 0.22);
+    inset 0 0 0 2px var(--selection-accent),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .backgroundPreview {
@@ -491,10 +521,19 @@
     0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
+.backgroundCardPanel .backgroundPreview {
+  min-height: 84px;
+  border-radius: 16px;
+}
+
 .backgroundMeta {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.backgroundCardPanel .backgroundMeta {
+  gap: 3px;
 }
 
 .backgroundMeta strong {
@@ -502,10 +541,27 @@
   letter-spacing: -0.01em;
 }
 
+.backgroundCardPanel .backgroundMeta strong {
+  font-size: 0.84rem;
+}
+
 .backgroundMeta span {
   color: var(--text-secondary);
   font-size: 0.8rem;
   line-height: 1.5;
+}
+
+.backgroundCardPanel .backgroundMeta span {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.backgroundCardSelected .backgroundMeta span {
+  color: rgba(233, 240, 255, 0.88);
 }
 
 .previewPathClassic,
@@ -613,6 +669,11 @@
     max-width: none;
   }
 
+  .backgroundPanel {
+    width: 100%;
+    max-width: none;
+  }
+
   .previewFrame {
     min-height: 144px;
   }
@@ -643,6 +704,10 @@
 
   .backgroundGrid {
     grid-template-columns: 1fr;
+  }
+
+  .backgroundGridPanel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .optionCard {

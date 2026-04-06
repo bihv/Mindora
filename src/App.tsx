@@ -462,7 +462,8 @@ function App() {
         isOpen={
           editor.isInspectorOpen &&
           editor.hasActiveSelection &&
-          !editor.isLayoutDialogOpen
+          !editor.isLayoutDialogOpen &&
+          !editor.isBackgroundDialogOpen
         }
         onNodeColorChange={(color) =>
           editor.handleNodeColorChange(editor.selectedNode.id, color)
@@ -488,7 +489,9 @@ function App() {
         selectedNode={editor.selectedNode}
       />
 
-      {!editor.isInspectorOpen && !editor.isLayoutDialogOpen ? (
+      {!editor.isInspectorOpen &&
+      !editor.isLayoutDialogOpen &&
+      !editor.isBackgroundDialogOpen ? (
         <MindMapMinimap
           minimap={minimap}
           minimapRef={minimapRef}
@@ -507,8 +510,10 @@ function App() {
 
       <CanvasBackgroundDialog
         currentBackgroundPresetId={editor.backgroundPresetId}
+        initialBackgroundPresetId={editor.backgroundPanelInitialPresetId}
         isOpen={editor.isBackgroundDialogOpen}
-        onApply={editor.handleBackgroundPresetChange}
+        onReset={editor.resetBackgroundDialog}
+        onSelect={editor.handleBackgroundPresetChange}
         onClose={editor.closeBackgroundDialog}
       />
     </div>
