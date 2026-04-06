@@ -167,13 +167,12 @@ function renderLineNodeDetail(
 
     return (
       <div className={rowClassName}>
-        <span className={styles.mindNodeOrganicKindTag}>
-          {MINDMAP_NODE_KIND_LABELS.link}
-        </span>
-        <p className={detailClassName}>{detailText}</p>
         {linkHref ? (
           <a
-            className={styles.mindNodeOrganicLink}
+            className={[
+              styles.mindNodeOrganicKindTag,
+              styles.mindNodeOrganicKindAction,
+            ].join(" ")}
             href={linkHref}
             onClick={(event) => handleExternalLinkClick(event, linkHref)}
             onPointerDown={(event) => event.stopPropagation()}
@@ -182,7 +181,12 @@ function renderLineNodeDetail(
           >
             Open
           </a>
-        ) : null}
+        ) : (
+          <span className={styles.mindNodeOrganicKindTag}>
+            {MINDMAP_NODE_KIND_LABELS.link}
+          </span>
+        )}
+        <p className={detailClassName}>{detailText}</p>
       </div>
     );
   }
@@ -230,12 +234,6 @@ function renderNodeContent(
             .join(" ")}
         >
           <h3>{getMindMapNodeLineTitle(node)}</h3>
-          {node.parentId !== null ? (
-            <span
-              aria-hidden="true"
-              className={styles.mindNodeOrganicRule}
-            />
-          ) : null}
         </div>
         {lineNodeDetail}
       </div>

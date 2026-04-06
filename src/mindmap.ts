@@ -276,26 +276,7 @@ export function getMindMapNodeDetailText(node: MindMapNode): string {
 }
 
 export function getMindMapNodeLineTitle(node: MindMapNode): string {
-  const title = getMindMapNodeDisplayTitle(node);
-  const hasCustomTitle = node.title.trim().length > 0;
-
-  switch (node.kind) {
-    case "image":
-      return hasCustomTitle ? `Image: ${title}` : MINDMAP_NODE_KIND_LABELS.image;
-    case "link":
-      return `Link: ${title}`;
-    case "emoji": {
-      const emoji = getMindMapNodeEmoji(node);
-      if (!hasCustomTitle) {
-        return emoji || MINDMAP_NODE_KIND_LABELS.emoji;
-      }
-
-      return emoji ? `${emoji} ${title}` : title;
-    }
-    case "text":
-    default:
-      return title;
-  }
+  return getMindMapNodeDisplayTitle(node);
 }
 
 function getMindMapCardNodeHeight(node: MindMapNode): number {

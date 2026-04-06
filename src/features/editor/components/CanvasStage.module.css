@@ -193,6 +193,12 @@
     0 12px 24px var(--organic-glow, rgba(0, 0, 0, 0.12));
 }
 
+.mindNodeOrganicRoot.mindNodeSelected .mindNodeContent {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.42),
+    0 14px 28px var(--organic-glow, rgba(0, 0, 0, 0.12));
+}
+
 .mindNodeMatched {
   box-shadow:
     0 20px 46px rgba(0, 0, 0, 0.2),
@@ -372,22 +378,21 @@
   justify-content: center;
   gap: 8px;
   min-height: 68px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  background:
-    linear-gradient(
-      135deg,
-      var(--organic-accent-strong, rgba(255, 255, 255, 0.08)),
-      var(--organic-accent-soft, rgba(255, 255, 255, 0.03)) 58%,
-      rgba(8, 14, 24, 0.08)
-    );
-  box-shadow:
-    inset 0 0 0 1px var(--organic-accent-border, rgba(255, 255, 255, 0.08)),
-    0 14px 28px rgba(0, 0, 0, 0.14);
+  padding: 12px 18px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .mindNodeOrganicContent {
   width: 100%;
+}
+
+.mindNodeOrganicRoot .mindNodeContent {
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--organic-accent-border, rgba(255, 255, 255, 0.16));
 }
 
 .mindNode h3 {
@@ -418,6 +423,11 @@
   align-items: center;
   gap: 14px;
   width: 100%;
+}
+
+.mindNodeOrganicTitleRow h3 {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .mindNodeOrganicMetaRow {
@@ -499,6 +509,8 @@
 }
 
 .mindNodeOrganicKindTag {
+  display: inline-flex;
+  align-items: center;
   padding: 3px 7px;
   border: 1px solid var(--organic-accent-border, rgba(255, 255, 255, 0.12));
   border-radius: 999px;
@@ -508,6 +520,21 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.mindNodeOrganicKindAction {
+  color: var(--organic-link, rgba(223, 248, 241, 0.92));
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.mindNodeOrganicKindAction:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--organic-accent-strong, rgba(8, 14, 24, 0.28));
+  color: #ffffff;
 }
 
 .mindNodeOrganicLink {
@@ -530,12 +557,17 @@
   justify-content: center;
 }
 
+.mindNodeClassicLineRootTitleRow h3 {
+  flex: 0 1 auto;
+}
+
 .mindNodeClassicLineLeft .mindNodeOrganicMetaRow {
   justify-content: flex-end;
 }
 
 .mindNodeOrganicRule {
-  flex: 1 1 auto;
+  flex: 0 0 108px;
+  width: 108px;
   height: 3px;
   border-radius: 999px;
   background: var(--organic-accent, rgba(255, 255, 255, 0.92));
