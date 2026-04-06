@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId } from "react";
 import {
   LOGIC_CHART_CARD_LAYOUT,
   LOGIC_CHART_LINE_LAYOUT,
@@ -6,17 +6,23 @@ import {
   MINDMAP_LINE_LAYOUT,
   type MindMapLayoutType,
 } from "../../../mindmap";
-import mindMapPreviewAsset from "../../../assets/mindmap-type-classic.svg";
-import mindMapLinePreviewAsset from "../../../assets/mindmap-type-line.svg";
-import logicChartCardPreviewAsset from "../../../assets/mindmap-type-logic-chart-card.svg";
-import logicChartPreviewAsset from "../../../assets/mindmap-type-logic-chart.svg";
+import mindMapPreviewAsset from "../../../assets/mindmap-type-classic.svg?raw";
+import mindMapLinePreviewAsset from "../../../assets/mindmap-type-line.svg?raw";
+import logicChartCardPreviewAsset from "../../../assets/mindmap-type-logic-chart-card.svg?raw";
+import logicChartPreviewAsset from "../../../assets/mindmap-type-logic-chart.svg?raw";
+import drawerStyles from "./EditorDrawer.module.css";
 import styles from "./MindMapTypeDialog.module.css";
+
+type PreviewTheme = "light" | "dark";
 
 type MindMapTypeDialogProps = {
   currentLayoutType: MindMapLayoutType;
+  initialLayoutType: MindMapLayoutType | null;
   isOpen: boolean;
-  onApply: (layoutType: MindMapLayoutType) => void;
+  onReset: () => void;
+  onSelect: (layoutType: MindMapLayoutType) => void;
   onClose: () => void;
+  previewTheme?: PreviewTheme;
 };
 
 type MindMapTypeGroupId = "mindmap" | "logic-chart";
@@ -30,6 +36,8 @@ type MindMapTypeOption = {
   id: MindMapLayoutType;
   ariaLabel: string;
   groupId: MindMapTypeGroupId;
+  label: string;
+  description: string;
 };
 
 const MINDMAP_TYPE_GROUPS: MindMapTypeGroup[] = [
@@ -48,21 +56,29 @@ const MINDMAP_TYPE_OPTIONS: MindMapTypeOption[] = [
     id: MINDMAP_CARD_LAYOUT,
     ariaLabel: "Mind Map card layout",
     groupId: "mindmap",
+    label: "Balanced Cards",
+    description: "Split ideas to both sides with rounded card nodes.",
   },
   {
     id: MINDMAP_LINE_LAYOUT,
     ariaLabel: "Mind Map line layout",
     groupId: "mindmap",
+    label: "Balanced Lines",
+    description: "Split ideas to both sides with a lighter line-first look.",
   },
   {
     id: LOGIC_CHART_CARD_LAYOUT,
     ariaLabel: "Logic Chart card layout",
     groupId: "logic-chart",
+    label: "Hierarchical Cards",
+    description: "Push the structure in one direction with clearer branches.",
   },
   {
     id: LOGIC_CHART_LINE_LAYOUT,
     ariaLabel: "Logic Chart line layout",
     groupId: "logic-chart",
+    label: "Hierarchical Lines",
+    description: "Keep a compact one-way flow with minimal line nodes.",
   },
 ];
 
@@ -71,23 +87,44 @@ const GROUPED_MINDMAP_TYPE_OPTIONS = MINDMAP_TYPE_GROUPS.map((group) => ({
   options: MINDMAP_TYPE_OPTIONS.filter((option) => option.groupId === group.id),
 }));
 
+function normalizePreviewSvgMarkup(markup: string) {
+  const embeddedSvgMatch = markup.match(/href="data:image\/svg\+xml,([^"]+)"/);
+  const unwrappedMarkup = embeddedSvgMatch
+    ? decodeURIComponent(embeddedSvgMatch[1])
+    : markup;
+
+  return unwrappedMarkup
+    .replace(
+      /(<[^>]+data-view-id="preview-background"[^>]+fill=")rgba\(255,\s*255,\s*255,\s*1\)"/g,
+      '$1var(--preview-svg-canvas)"',
+    )
+    .replace(/rgba\(255,\s*255,\s*255,\s*1\)/g, "var(--preview-svg-surface-stroke)")
+    .replace(/rgba\(230,\s*230,\s*230,\s*1\)/g, "var(--preview-svg-node-fill)")
+    .replace(/rgba\(38,\s*38,\s*38,\s*1\)/g, "var(--preview-svg-ink)")
+    .replace(/rgba\(51,\s*51,\s*51,\s*1\)/g, "var(--preview-svg-muted-ink)")
+    .replace(/rgb\(38,\s*38,\s*38\)/g, "var(--preview-svg-ink)")
+    .replace(/rgb\(51,\s*51,\s*51\)/g, "var(--preview-svg-muted-ink)");
+}
+
+const MINDMAP_TYPE_PREVIEW_MARKUP: Record<MindMapLayoutType, string> = {
+  [MINDMAP_CARD_LAYOUT]: normalizePreviewSvgMarkup(mindMapPreviewAsset),
+  [MINDMAP_LINE_LAYOUT]: normalizePreviewSvgMarkup(mindMapLinePreviewAsset),
+  [LOGIC_CHART_CARD_LAYOUT]: normalizePreviewSvgMarkup(
+    logicChartCardPreviewAsset,
+  ),
+  [LOGIC_CHART_LINE_LAYOUT]: normalizePreviewSvgMarkup(logicChartPreviewAsset),
+};
+
 export function MindMapTypeDialog({
   currentLayoutType,
+  initialLayoutType,
   isOpen,
-  onApply,
+  onReset,
+  onSelect,
   onClose,
+  previewTheme = "dark",
 }: MindMapTypeDialogProps) {
   const titleId = useId();
-  const descriptionId = useId();
-  const [selectedLayoutType, setSelectedLayoutType] = useState(currentLayoutType);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    setSelectedLayoutType(currentLayoutType);
-  }, [currentLayoutType, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -110,41 +147,52 @@ export function MindMapTypeDialog({
     return null;
   }
 
-  const handleApply = () => {
-    if (selectedLayoutType !== currentLayoutType) {
-      onApply(selectedLayoutType);
-    }
-
-    onClose();
-  };
+  const canReset =
+    initialLayoutType !== null && initialLayoutType !== currentLayoutType;
 
   return (
-    <div className={styles.overlay} onClick={onClose} role="presentation">
+    <aside
+      aria-labelledby={titleId}
+      className={[
+        drawerStyles.canvasDrawer,
+        drawerStyles.canvasDrawerRight,
+        drawerStyles.isOpen,
+      ].join(" ")}
+      data-native-scroll="true"
+      onWheel={(event) => event.stopPropagation()}
+    >
       <section
-        aria-describedby={descriptionId}
         aria-labelledby={titleId}
-        aria-modal="true"
-        className={styles.dialog}
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
+        className={[drawerStyles.floatingPanel, styles.layoutPanel].join(" ")}
+        role="region"
       >
-        <button
-          aria-label="Close layout dialog"
-          className={styles.closeButton}
-          onClick={onClose}
-          type="button"
-        >
-          ×
-        </button>
+        <header className={styles.layoutPanelHeader}>
+          <div className={styles.header}>
+            <span className={styles.eyebrow} id={titleId}>
+              Layout Type
+            </span>
+          </div>
 
-        <header className={styles.header}>
-          <span className={styles.eyebrow}>Layout Gallery</span>
-          <h2 id={titleId}>Choose a layout type</h2>
-          <p id={descriptionId}>
-            Pick the visual structure that matches how ideas should flow.
-            Switching layout types will re-layout the current map.
-          </p>
+          <button
+            aria-label="Close layout panel"
+            className={styles.panelCloseButton}
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
         </header>
+
+        <div className={styles.layoutPanelActions}>
+          <button
+            className={styles.secondaryButton}
+            disabled={!canReset}
+            onClick={onReset}
+            type="button"
+          >
+            Reset
+          </button>
+        </div>
 
         <div className={styles.groupList}>
           {GROUPED_MINDMAP_TYPE_OPTIONS.map((group) => (
@@ -154,10 +202,9 @@ export function MindMapTypeDialog({
                 <h3>{group.title}</h3>
               </div>
 
-              <div className={styles.groupGrid}>
+              <div className={[styles.groupGrid, styles.groupGridPanel].join(" ")}>
                 {group.options.map((option) => {
-                  const isSelected = selectedLayoutType === option.id;
-                  const isCurrent = currentLayoutType === option.id;
+                  const isSelected = currentLayoutType === option.id;
 
                   return (
                     <button
@@ -165,28 +212,39 @@ export function MindMapTypeDialog({
                       aria-pressed={isSelected}
                       className={[
                         styles.optionCard,
+                        styles.optionCardPanel,
+                        option.groupId === "mindmap"
+                          ? styles.optionCardMindMap
+                          : styles.optionCardLogicChart,
                         isSelected ? styles.optionCardSelected : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
                       key={option.id}
-                      onClick={() => setSelectedLayoutType(option.id)}
+                      onClick={() => onSelect(option.id)}
                       type="button"
                     >
-                      {isCurrent ? (
-                        <span className={styles.currentBadge}>Current</span>
-                      ) : null}
-
                       <div
                         className={[
                           styles.previewFrame,
+                          previewTheme === "dark"
+                            ? styles.previewFrameDark
+                            : styles.previewFrameLight,
                           option.groupId === "mindmap"
                             ? styles.previewFrameMindMap
                             : styles.previewFrameLogicChart,
                         ].join(" ")}
                       >
-                        <MindMapTypeIllustration layoutType={option.id} />
+                        <MindMapTypeIllustration
+                          layoutType={option.id}
+                          theme={previewTheme}
+                        />
                       </div>
+
+                      <span className={styles.optionMeta}>
+                        <strong>{option.label}</strong>
+                        <span>{option.description}</span>
+                      </span>
                     </button>
                   );
                 })}
@@ -194,86 +252,28 @@ export function MindMapTypeDialog({
             </section>
           ))}
         </div>
-
-        <footer className={styles.footer}>
-          <div className={styles.footerText}>
-            <strong>Tip:</strong> You can reopen this anytime from the desktop
-            menu: Layout → Mindmap Type...
-          </div>
-          <div className={styles.actions}>
-            <button
-              className={styles.secondaryButton}
-              onClick={onClose}
-              type="button"
-            >
-              Cancel
-            </button>
-            <button
-              className={styles.primaryButton}
-              onClick={handleApply}
-              type="button"
-            >
-              {selectedLayoutType === currentLayoutType ? "Done" : "Apply type"}
-            </button>
-          </div>
-        </footer>
       </section>
-    </div>
+    </aside>
   );
 }
 
 function MindMapTypeIllustration({
   layoutType,
+  theme,
 }: {
   layoutType: MindMapLayoutType;
+  theme: PreviewTheme;
 }) {
-  if (layoutType === MINDMAP_CARD_LAYOUT) {
-    return (
-      <img
-        alt=""
-        aria-hidden="true"
-        className={[styles.previewSvg, styles.previewImage].join(" ")}
-        draggable={false}
-        src={mindMapPreviewAsset}
-      />
-    );
-  }
+  const markup = MINDMAP_TYPE_PREVIEW_MARKUP[layoutType];
 
-  if (layoutType === MINDMAP_LINE_LAYOUT) {
-    return (
-      <img
-        alt=""
-        aria-hidden="true"
-        className={[styles.previewSvg, styles.previewImage].join(" ")}
-        draggable={false}
-        src={mindMapLinePreviewAsset}
-      />
-    );
-  }
-
-  if (layoutType === LOGIC_CHART_LINE_LAYOUT) {
-    return (
-      <img
-        alt=""
-        aria-hidden="true"
-        className={[styles.previewSvg, styles.previewImage].join(" ")}
-        draggable={false}
-        src={logicChartPreviewAsset}
-      />
-    );
-  }
-
-  if (layoutType === LOGIC_CHART_CARD_LAYOUT) {
-    return (
-      <img
-        alt=""
-        aria-hidden="true"
-        className={[styles.previewSvg, styles.previewImage].join(" ")}
-        draggable={false}
-        src={logicChartCardPreviewAsset}
-      />
-    );
-  }
-
-  return null;
+  return (
+    <span
+      aria-hidden="true"
+      className={[
+        styles.previewSvg,
+        theme === "dark" ? styles.previewSvgDark : styles.previewSvgLight,
+      ].join(" ")}
+      dangerouslySetInnerHTML={{ __html: markup }}
+    />
+  );
 }

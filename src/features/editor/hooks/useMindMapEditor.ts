@@ -76,6 +76,8 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isLayoutDialogOpen, setIsLayoutDialogOpen] = useState(false);
+  const [layoutPanelInitialLayoutType, setLayoutPanelInitialLayoutType] =
+    useState<MindMapLayoutType | null>(null);
   const [isBackgroundDialogOpen, setIsBackgroundDialogOpen] = useState(false);
 
   const mindMap = editorState.history[editorState.historyIndex];
@@ -580,6 +582,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       setIsOutlineOpen(false);
       setIsInspectorOpen(false);
       setIsLayoutDialogOpen(false);
+      setLayoutPanelInitialLayoutType(null);
       setIsBackgroundDialogOpen(false);
 
       requestAnimationFrame(() => {
@@ -744,16 +747,33 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   }, []);
 
   const openLayoutDialog = useCallback(() => {
+    if (!isLayoutDialogOpen) {
+      setLayoutPanelInitialLayoutType(layoutType);
+    }
     setIsBackgroundDialogOpen(false);
+    setIsInspectorOpen(false);
     setIsLayoutDialogOpen(true);
-  }, []);
+  }, [isLayoutDialogOpen, layoutType]);
 
   const closeLayoutDialog = useCallback(() => {
     setIsLayoutDialogOpen(false);
+    setLayoutPanelInitialLayoutType(null);
   }, []);
+
+  const resetLayoutDialog = useCallback(() => {
+    if (
+      layoutPanelInitialLayoutType === null ||
+      layoutPanelInitialLayoutType === layoutType
+    ) {
+      return;
+    }
+
+    handleLayoutTypeChange(layoutPanelInitialLayoutType);
+  }, [handleLayoutTypeChange, layoutPanelInitialLayoutType, layoutType]);
 
   const openBackgroundDialog = useCallback(() => {
     setIsLayoutDialogOpen(false);
+    setLayoutPanelInitialLayoutType(null);
     setIsBackgroundDialogOpen(true);
   }, []);
 
@@ -807,10 +827,12 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       isLayoutDialogOpen,
       isOutlineOpen,
       layoutType,
+      layoutPanelInitialLayoutType,
       mindMap,
       openBackgroundDialog,
       openLayoutDialog,
       redo,
+      resetLayoutDialog,
       selectNode,
       selectedNode,
       selectedNodeId,
@@ -857,10 +879,12 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       isLayoutDialogOpen,
       isOutlineOpen,
       layoutType,
+      layoutPanelInitialLayoutType,
       mindMap,
       openBackgroundDialog,
       openLayoutDialog,
       redo,
+      resetLayoutDialog,
       selectNode,
       selectedNode,
       selectedNodeId,

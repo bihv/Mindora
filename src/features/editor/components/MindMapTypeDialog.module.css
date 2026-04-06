@@ -58,6 +58,7 @@
 }
 
 .closeButton:focus-visible,
+.panelCloseButton:focus-visible,
 .optionCard:focus-visible,
 .backgroundCard:focus-visible,
 .primaryButton:focus-visible,
@@ -66,11 +67,65 @@
   outline-offset: 3px;
 }
 
+.layoutPanel {
+  width: 364px;
+  max-width: min(364px, calc(100vw - 52px));
+  gap: 14px;
+}
+
+.layoutPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.panelCloseButton {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.panelCloseButton:hover {
+  border-color: var(--surface-border-strong);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.layoutPanelActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.layoutPanelActions .secondaryButton {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+}
+
 .header {
   max-width: 58ch;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .eyebrow {
@@ -96,13 +151,13 @@
 .groupList {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
 }
 
 .groupSection {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .groupHeader {
@@ -123,7 +178,7 @@
 .groupHeader h3 {
   margin: 0;
   color: var(--text-primary);
-  font-size: 1.28rem;
+  font-size: 1.04rem;
   letter-spacing: -0.03em;
 }
 
@@ -134,21 +189,61 @@
   justify-content: flex-start;
 }
 
+.groupGridPanel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .optionCard {
+  --selection-accent: rgba(145, 176, 255, 0.92);
+  --selection-accent-border: rgba(198, 214, 255, 0.96);
   position: relative;
-  min-height: 176px;
+  min-height: 224px;
   display: flex;
+  flex-direction: column;
+  gap: 14px;
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 26px;
   background: rgba(255, 255, 255, 0.04);
   color: inherit;
   cursor: pointer;
+  overflow: hidden;
+  text-align: left;
   transition:
     transform 180ms ease,
     border-color 180ms ease,
     background 180ms ease,
     box-shadow 180ms ease;
+}
+
+.optionCardPanel {
+  min-height: 164px;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 20px;
+}
+
+.optionCard::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.optionCardMindMap {
+  --selection-accent: rgba(145, 176, 255, 0.94);
+  --selection-accent-border: rgba(198, 214, 255, 0.96);
+}
+
+.optionCardLogicChart {
+  --selection-accent: rgba(143, 225, 197, 0.92);
+  --selection-accent-border: rgba(191, 244, 225, 0.95);
 }
 
 .optionCard:hover {
@@ -158,34 +253,50 @@
   transform: translateY(-2px);
 }
 
+.optionCardCurrent:not(.optionCardSelected) {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .optionCardSelected {
-  border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--selection-accent-border);
+}
+
+.optionCardSelected::after {
+  opacity: 1;
   box-shadow:
-    inset 0 0 0 2px rgba(19, 24, 31, 0.92),
-    0 20px 40px rgba(0, 0, 0, 0.22);
+    inset 0 0 0 2px var(--selection-accent),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .currentBadge {
   position: absolute;
   top: 18px;
-  right: 18px;
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
+  min-height: 30px;
   padding: 0 11px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
-  background: rgba(14, 18, 25, 0.68);
-  color: rgba(243, 247, 255, 0.96);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   backdrop-filter: blur(10px);
 }
 
+.currentBadge {
+  right: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(14, 18, 25, 0.68);
+  color: rgba(243, 247, 255, 0.96);
+}
+
 .previewFrame {
+  --preview-svg-canvas: rgba(251, 252, 254, 0.98);
+  --preview-svg-surface-stroke: rgba(255, 255, 255, 0.96);
+  --preview-svg-node-fill: rgba(232, 237, 243, 0.98);
+  --preview-svg-ink: rgba(35, 43, 56, 0.9);
+  --preview-svg-muted-ink: rgba(82, 93, 109, 0.84);
   flex: 1;
   min-height: 154px;
   display: flex;
@@ -195,7 +306,6 @@
   border: 1px solid rgba(18, 22, 28, 0.08);
   border-radius: 20px;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(245, 247, 250, 0.98));
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease,
@@ -206,32 +316,129 @@
   transform: translateY(-1px);
 }
 
-.optionCardSelected .previewFrame {
-  border-color: rgba(18, 24, 32, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(18, 24, 32, 0.12);
+.optionCardPanel .previewFrame {
+  min-height: 92px;
+  padding: 12px;
+  border-radius: 16px;
 }
 
-.previewFrameMindMap {
+.previewFrameLight {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.99),
+    rgba(245, 247, 250, 0.98)
+  );
+}
+
+.previewFrameDark {
+  --preview-svg-canvas: rgba(20, 27, 38, 0.98);
+  --preview-svg-surface-stroke: rgba(123, 143, 171, 0.52);
+  --preview-svg-node-fill: rgba(62, 74, 92, 0.96);
+  --preview-svg-ink: rgba(234, 241, 255, 0.94);
+  --preview-svg-muted-ink: rgba(184, 196, 218, 0.82);
+  border-color: rgba(134, 154, 187, 0.16);
+  background: linear-gradient(
+    180deg,
+    rgba(18, 26, 39, 0.98),
+    rgba(11, 17, 28, 0.98)
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(140, 159, 191, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+.optionMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 6px 4px;
+}
+
+.optionCardPanel .optionMeta {
+  gap: 3px;
+  padding: 0 4px 2px;
+}
+
+.optionMeta strong {
+  color: var(--text-primary);
+  font-size: 0.94rem;
+  letter-spacing: -0.02em;
+}
+
+.optionCardPanel .optionMeta strong {
+  font-size: 0.84rem;
+}
+
+.optionMeta span {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.optionCardPanel .optionMeta span {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.optionCardSelected .optionMeta span {
+  color: rgba(233, 240, 255, 0.88);
+}
+
+.previewFrameMindMap.previewFrameLight {
   box-shadow: inset 0 0 0 1px rgba(123, 145, 191, 0.08);
 }
 
-.previewFrameLogicChart {
+.previewFrameMindMap.previewFrameDark {
+  background:
+    radial-gradient(circle at 24% 24%, rgba(88, 123, 190, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(18, 26, 39, 0.98), rgba(11, 17, 28, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(132, 164, 221, 0.12),
+    0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+.previewFrameLogicChart.previewFrameLight {
   background:
     radial-gradient(circle at 28% 30%, rgba(224, 238, 230, 0.64), transparent 40%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(245, 247, 250, 0.98));
   box-shadow: inset 0 0 0 1px rgba(126, 146, 160, 0.08);
 }
 
+.previewFrameLogicChart.previewFrameDark {
+  background:
+    radial-gradient(circle at 28% 30%, rgba(96, 175, 145, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(18, 26, 39, 0.98), rgba(11, 17, 28, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(127, 188, 163, 0.12),
+    0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
 .previewSvg {
+  display: block;
+  width: 100%;
+  max-height: 100%;
+  line-height: 0;
+}
+
+.previewSvg svg {
+  display: block;
   width: 100%;
   height: auto;
   max-height: 100%;
 }
 
-.previewImage {
-  display: block;
-  max-height: 100%;
-  object-fit: contain;
+.previewSvgLight {
+  filter: saturate(0.98);
+}
+
+.previewSvgDark {
+  filter:
+    saturate(1.04)
+    drop-shadow(0 8px 18px rgba(0, 0, 0, 0.16));
 }
 
 .backgroundGrid {
@@ -375,6 +582,13 @@
   transform: translateY(-1px);
 }
 
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
+  transform: none;
+}
+
 @media (max-width: 840px) {
   .overlay {
     padding: 16px;
@@ -392,6 +606,11 @@
 
   .backgroundGrid {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .layoutPanel {
+    width: 100%;
+    max-width: none;
   }
 
   .previewFrame {
@@ -418,12 +637,28 @@
     grid-template-columns: 1fr;
   }
 
+  .groupGridPanel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .backgroundGrid {
     grid-template-columns: 1fr;
   }
 
   .optionCard {
-    min-height: 164px;
+    min-height: 206px;
+  }
+
+  .optionCardPanel {
+    min-height: 158px;
+  }
+
+  .layoutPanelHeader {
+    gap: 10px;
+  }
+
+  .layoutPanelActions .secondaryButton {
+    align-self: flex-start;
   }
 
   .actions {

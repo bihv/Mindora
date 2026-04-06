@@ -459,7 +459,11 @@ function App() {
       />
 
       <InspectorDrawer
-        isOpen={editor.isInspectorOpen && editor.hasActiveSelection}
+        isOpen={
+          editor.isInspectorOpen &&
+          editor.hasActiveSelection &&
+          !editor.isLayoutDialogOpen
+        }
         onNodeColorChange={(color) =>
           editor.handleNodeColorChange(editor.selectedNode.id, color)
         }
@@ -484,7 +488,7 @@ function App() {
         selectedNode={editor.selectedNode}
       />
 
-      {!editor.isInspectorOpen ? (
+      {!editor.isInspectorOpen && !editor.isLayoutDialogOpen ? (
         <MindMapMinimap
           minimap={minimap}
           minimapRef={minimapRef}
@@ -494,8 +498,10 @@ function App() {
 
       <MindMapTypeDialog
         currentLayoutType={editor.layoutType}
+        initialLayoutType={editor.layoutPanelInitialLayoutType}
         isOpen={editor.isLayoutDialogOpen}
-        onApply={editor.handleLayoutTypeChange}
+        onReset={editor.resetLayoutDialog}
+        onSelect={editor.handleLayoutTypeChange}
         onClose={editor.closeLayoutDialog}
       />
 
