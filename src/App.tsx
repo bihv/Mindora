@@ -463,6 +463,18 @@ function App() {
         onNodeColorChange={(color) =>
           editor.handleNodeColorChange(editor.selectedNode.id, color)
         }
+        onNodeEmojiChange={(value) =>
+          editor.handleNodeEmojiChange(editor.selectedNode.id, value)
+        }
+        onNodeImageUrlChange={(value) =>
+          editor.handleNodeImageUrlChange(editor.selectedNode.id, value)
+        }
+        onNodeKindChange={(kind) =>
+          editor.handleNodeKindChange(editor.selectedNode.id, kind)
+        }
+        onNodeLinkUrlChange={(value) =>
+          editor.handleNodeLinkUrlChange(editor.selectedNode.id, value)
+        }
         onNodeNotesChange={(value) =>
           editor.handleNodeNotesChange(editor.selectedNode.id, value)
         }

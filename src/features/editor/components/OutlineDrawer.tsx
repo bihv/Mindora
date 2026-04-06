@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
-import { NODE_COLORS, type MindMapDocument } from "../../../mindmap";
+import {
+  NODE_COLORS,
+  getMindMapNodeDisplayTitle,
+  type MindMapDocument,
+} from "../../../mindmap";
 import drawerStyles from "./EditorDrawer.module.css";
 import styles from "./OutlineDrawer.module.css";
 
@@ -67,7 +71,7 @@ export function OutlineDrawer({
             style={{ background: NODE_COLORS[node.color].accent }}
           />
           <span className={styles.outlineItemTitle}>
-            {node.title || "Untitled Node"}
+            {getMindMapNodeDisplayTitle(node)}
           </span>
           {node.childrenIds.length > 0 ? (
             <span className={styles.outlineItemCount}>

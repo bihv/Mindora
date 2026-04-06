@@ -8,14 +8,17 @@ import {
   type WheelEvent as ReactWheelEvent,
 } from "react";
 import {
-  NODE_HEIGHT,
   NODE_WIDTH,
 } from "../constants";
 import type {
   CameraState,
   Position,
 } from "../types";
-import type { MindMapDocument } from "../../../mindmap";
+import {
+  getMindMapLayoutType,
+  getNodeHeightForLayout,
+  type MindMapDocument,
+} from "../../../mindmap";
 
 type UseCanvasStateArgs = {
   rootId: string;
@@ -47,9 +50,14 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
         return false;
       }
 
+      const nodeHeight = getNodeHeightForLayout(
+        getMindMapLayoutType(document),
+        node,
+      );
+
       setCamera({
         x: node.x - width / 2 + NODE_WIDTH / 2,
-        y: node.y - height / 2 + NODE_HEIGHT / 2,
+        y: node.y - height / 2 + nodeHeight / 2,
       });
 
       return true;

@@ -4,7 +4,6 @@ import {
   MINIMAP_PADDING,
   MINIMAP_WIDTH,
   MINIMAP_WORLD_PADDING,
-  NODE_HEIGHT,
   NODE_WIDTH,
 } from "./constants";
 import {
@@ -26,6 +25,9 @@ import {
   NODE_COLORS,
   getMindMapLayoutType,
   getBranchDirection,
+  getNodeHeightForLayout,
+  getNodeSizeForLayout,
+  getMindMapNodeSearchTexts,
   getSubtreeIds,
   type MindMapDocument,
   type MindMapLayoutType,
@@ -133,9 +135,8 @@ export function findSearchMatches(
   }
 
   return Object.values(document.nodes).filter((node) => {
-    return (
-      node.title.toLowerCase().includes(normalizedQuery) ||
-      node.notes.toLowerCase().includes(normalizedQuery)
+    return getMindMapNodeSearchTexts(node).some((value) =>
+      value.toLowerCase().includes(normalizedQuery),
     );
   });
 }
@@ -163,9 +164,9 @@ export function buildOutlineSearchVisibleSet(
       return false;
     }
 
-    const selfMatches =
-      node.title.toLowerCase().includes(normalizedQuery) ||
-      node.notes.toLowerCase().includes(normalizedQuery);
+    const selfMatches = getMindMapNodeSearchTexts(node).some((value) =>
+      value.toLowerCase().includes(normalizedQuery),
+    );
     if (selfMatches) {
       cache.set(nodeId, true);
       return true;
@@ -217,6 +218,8 @@ export function buildConnectors(
 
       const parentPosition = stagePositions[parent.id];
       const childPosition = stagePositions[node.id];
+      const parentSize = getNodeSizeForLayout(layoutType, parent);
+      const childSize = getNodeSizeForLayout(layoutType, node);
       const direction = getBranchDirection(document, node.id);
       const focusState = getConnectorFocusState(
         nodeFocusStates[parent.id] ?? "dimmed",
@@ -233,6 +236,8 @@ export function buildConnectors(
           childPosition,
           direction,
           CONNECTOR_CURVE_OFFSET,
+          parentSize,
+          childSize,
         ),
       };
     })
@@ -268,6 +273,8 @@ export function buildReparentPreviewConnector(
       parent.parentId === null
         ? (reparenting.rootDirection ?? 1)
         : getBranchDirection(document, parent.id);
+    const parentSize = getNodeSizeForLayout(layoutType, parent);
+    const childSize = getNodeSizeForLayout(layoutType, node);
 
     return {
       color: NODE_COLORS[node.color].accent,
@@ -278,6 +285,8 @@ export function buildReparentPreviewConnector(
         childPosition,
         direction,
         CONNECTOR_CURVE_OFFSET,
+        parentSize,
+        childSize,
       ),
     };
   }
@@ -295,6 +304,7 @@ export function buildReparentPreviewConnector(
         width: 0,
         height: 0,
       },
+      getNodeSizeForLayout(layoutType, node),
     ),
   };
 }
@@ -331,15 +341,17 @@ export function buildMinimapData({
   let maxY = Number.NEGATIVE_INFINITY;
 
   for (const nodeId of visibleNodeIds) {
+    const node = document.nodes[nodeId];
     const position = renderPositions[nodeId];
-    if (!position) {
+    if (!node || !position) {
       continue;
     }
 
+    const nodeHeight = getNodeHeightForLayout(layoutType, node);
     minX = Math.min(minX, position.x);
     minY = Math.min(minY, position.y);
     maxX = Math.max(maxX, position.x + NODE_WIDTH);
-    maxY = Math.max(maxY, position.y + NODE_HEIGHT);
+    maxY = Math.max(maxY, position.y + nodeHeight);
   }
 
   if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
@@ -363,16 +375,11 @@ export function buildMinimapData({
   const contentHeight = worldHeight * scale;
   const offsetX = (MINIMAP_WIDTH - contentWidth) / 2;
   const offsetY = (MINIMAP_HEIGHT - contentHeight) / 2;
-  const minimapNodeWidth = Math.max(NODE_WIDTH * scale, 8);
-  const minimapNodeHeight = Math.max(NODE_HEIGHT * scale, 6);
-  const minimapNodeSize = {
-    width: minimapNodeWidth,
-    height: minimapNodeHeight,
-  };
 
   const nodes = visibleNodeIds.map((nodeId) => {
     const node = document.nodes[nodeId];
     const position = renderPositions[nodeId];
+    const nodeHeight = getNodeHeightForLayout(layoutType, node);
 
     return {
       id: nodeId,
@@ -381,8 +388,8 @@ export function buildMinimapData({
       isSelected: hasActiveSelection && nodeId === selectedNodeId,
       x: offsetX + (position.x - minX) * scale,
       y: offsetY + (position.y - minY) * scale,
-      width: minimapNodeWidth,
-      height: minimapNodeHeight,
+      width: Math.max(NODE_WIDTH * scale, 8),
+      height: Math.max(nodeHeight * scale, 6),
     };
   });
 
@@ -400,7 +407,23 @@ export function buildMinimapData({
         return null;
       }
 
+      const parentNode = document.nodes[node.parentId];
+      if (!parentNode) {
+        return null;
+      }
+
       const direction = getBranchDirection(document, nodeId);
+      const scaledParentSize = {
+        width: Math.max(NODE_WIDTH * scale, 8),
+        height: Math.max(
+          getNodeHeightForLayout(layoutType, parentNode) * scale,
+          6,
+        ),
+      };
+      const scaledChildSize = {
+        width: Math.max(NODE_WIDTH * scale, 8),
+        height: Math.max(getNodeHeightForLayout(layoutType, node) * scale, 6),
+      };
       const scaledParentPosition = {
         x: offsetX + (parentPosition.x - minX) * scale,
         y: offsetY + (parentPosition.y - minY) * scale,
@@ -424,8 +447,8 @@ export function buildMinimapData({
           scaledChildPosition,
           direction,
           CONNECTOR_CURVE_OFFSET * scale,
-          minimapNodeSize,
-          minimapNodeSize,
+          scaledParentSize,
+          scaledChildSize,
         ),
       };
     })

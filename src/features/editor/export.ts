@@ -5,10 +5,18 @@ import {
 import {
   LOGIC_CHART_LINE_LAYOUT,
   MINDMAP_LINE_LAYOUT,
+  MINDMAP_NODE_KIND_LABELS,
   NODE_COLORS,
   getMindMapBackgroundPresetId,
   getMindMapLayoutType,
   getBranchDirection,
+  getMindMapNodeDisplayTitle,
+  getMindMapNodeEmoji,
+  getMindMapNodeLineTitle,
+  getMindMapNodeLinkUrl,
+  getMindMapNodeMediaUrl,
+  getNodeHeightForLayout,
+  getNodeSizeForLayout,
   getSubtreeIds,
   isLogicChartLayoutType,
   type MindMapDocument,
@@ -18,7 +26,6 @@ import {
 } from "../../mindmap";
 import {
   CONNECTOR_CURVE_OFFSET,
-  NODE_HEIGHT,
   NODE_WIDTH,
 } from "./constants";
 import { createLayoutConnectorPath } from "./layout";
@@ -35,6 +42,7 @@ type ExportSnapshot = {
   layoutType: MindMapLayoutType;
   nodes: Array<{
     direction: -1 | 1;
+    height: number;
     node: MindMapNode;
     x: number;
     y: number;
@@ -123,6 +131,7 @@ export async function buildMindMapExportBlob(
 function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
   const backgroundPresetId = getMindMapBackgroundPresetId(document);
   const layoutType = getMindMapLayoutType(document);
+  const nodeHeight = getNodeHeightForLayout(layoutType);
   const nodeIds = getSubtreeIds(document, document.rootId).filter(
     (nodeId) => document.nodes[nodeId],
   );
@@ -144,7 +153,7 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
     return {
       backgroundPresetId,
       connectors: [],
-      height: NODE_HEIGHT + EXPORT_PADDING * 2,
+      height: nodeHeight + EXPORT_PADDING * 2,
       layoutType,
       nodes: [],
       width: NODE_WIDTH + EXPORT_PADDING * 2,
@@ -157,12 +166,14 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
   let maxY = Number.NEGATIVE_INFINITY;
 
   for (const nodeId of nodeIds) {
+    const node = document.nodes[nodeId];
     const position = positions[nodeId];
+    const currentNodeHeight = getNodeHeightForLayout(layoutType, node);
 
     minX = Math.min(minX, position.x);
     minY = Math.min(minY, position.y);
     maxX = Math.max(maxX, position.x + NODE_WIDTH);
-    maxY = Math.max(maxY, position.y + NODE_HEIGHT);
+    maxY = Math.max(maxY, position.y + currentNodeHeight);
   }
 
   const offsetX = EXPORT_PADDING - minX;
@@ -181,6 +192,7 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
       document.nodes[nodeId].parentId === null
         ? 1
         : getBranchDirection(document, nodeId),
+    height: getNodeHeightForLayout(layoutType, document.nodes[nodeId]),
     node: document.nodes[nodeId],
     x: normalizedPositions[nodeId].x,
     y: normalizedPositions[nodeId].y,
@@ -209,6 +221,8 @@ function buildExportSnapshot(document: MindMapDocument): ExportSnapshot {
           childPosition,
           getBranchDirection(document, nodeId),
           CONNECTOR_CURVE_OFFSET,
+          getNodeSizeForLayout(layoutType, document.nodes[node.parentId]),
+          getNodeSizeForLayout(layoutType, node),
         ),
       };
     })
@@ -314,19 +328,23 @@ function buildGradientDefs(): string {
     .join("");
 }
 
-function buildMindMapNodeMarkup(snapshotNode: ExportSnapshot["nodes"][number]): string {
-  const { node, x, y } = snapshotNode;
+function buildMindMapNodeMarkup(
+  snapshotNode: ExportSnapshot["nodes"][number],
+): string {
+  const { height, node, x, y } = snapshotNode;
   const hasChildren = node.childrenIds.length > 0;
+  const title = getMindMapNodeDisplayTitle(node);
+  const secondaryText = getExportNodeSecondaryText(node);
   const titleWidth = NODE_WIDTH - 36 - (hasChildren ? 60 : 0);
   const noteWidth = NODE_WIDTH - 36;
   const titleLines = wrapText(
-    node.title.trim() || "Untitled Node",
+    title,
     titleWidth,
     TITLE_FONT,
-    node.notes ? 2 : 3,
+    secondaryText ? 2 : 3,
   );
-  const noteLines = node.notes
-    ? wrapText(node.notes.trim(), noteWidth, NOTES_FONT, 2)
+  const noteLines = secondaryText
+    ? wrapText(secondaryText, noteWidth, NOTES_FONT, 2)
     : [];
   const titleMarkup = buildTextBlockMarkup({
     baselineY: 34,
@@ -358,7 +376,7 @@ function buildMindMapNodeMarkup(snapshotNode: ExportSnapshot["nodes"][number]): 
     <g transform="translate(${x} ${y})" filter="url(#mindora-node-shadow)">
       <rect
         width="${NODE_WIDTH}"
-        height="${NODE_HEIGHT}"
+        height="${height}"
         rx="18"
         fill="url(#mindora-node-fill-${node.color})"
         stroke="#ffffff"
@@ -375,12 +393,12 @@ function buildLogicChartNodeMarkup(
   snapshotNode: ExportSnapshot["nodes"][number],
 ): string {
   const { node, x, y } = snapshotNode;
-  const title = escapeXml(node.title.trim() || "Untitled Node");
+  const title = escapeXml(getMindMapNodeLineTitle(node));
   const isRoot = node.parentId === null;
   const accent = NODE_COLORS[node.color].accent;
   const font = isRoot ? LOGIC_CHART_TITLE_FONT : LOGIC_CHART_BRANCH_FONT;
   const titleWidth = Math.min(
-    measureTextWidth(node.title.trim() || "Untitled Node", font),
+    measureTextWidth(getMindMapNodeLineTitle(node), font),
     NODE_WIDTH - 20,
   );
   const textX = 0;
@@ -421,7 +439,8 @@ function buildMindMapLineNodeMarkup(
   snapshotNode: ExportSnapshot["nodes"][number],
 ): string {
   const { direction, node, x, y } = snapshotNode;
-  const title = escapeXml(node.title.trim() || "Untitled Node");
+  const lineTitle = getMindMapNodeLineTitle(node);
+  const title = escapeXml(lineTitle);
   const isRoot = node.parentId === null;
   const accent = NODE_COLORS[node.color].accent;
 
@@ -442,7 +461,7 @@ function buildMindMapLineNodeMarkup(
   }
 
   const titleWidth = Math.min(
-    measureTextWidth(node.title.trim() || "Untitled Node", MINDMAP_LINE_BRANCH_FONT),
+    measureTextWidth(lineTitle, MINDMAP_LINE_BRANCH_FONT),
     NODE_WIDTH - 20,
   );
   const textY = 38;
@@ -499,6 +518,27 @@ function buildMindMapLineNodeMarkup(
       />
     </g>
   `;
+}
+
+function getExportNodeSecondaryText(node: MindMapNode): string {
+  if (node.kind === "text") {
+    return node.notes.trim();
+  }
+
+  if (node.kind === "link") {
+    return getMindMapNodeLinkUrl(node) || node.notes.trim();
+  }
+
+  if (node.kind === "emoji") {
+    return node.notes.trim() || getMindMapNodeEmoji(node) || "Emoji node";
+  }
+
+  const mediaUrl = getMindMapNodeMediaUrl(node);
+  return (
+    node.notes.trim() ||
+    mediaUrl ||
+    `${MINDMAP_NODE_KIND_LABELS[node.kind]} node`
+  );
 }
 
 function buildNodeBadgeMarkup(node: MindMapNode): string {

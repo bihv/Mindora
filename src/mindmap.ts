@@ -3,7 +3,11 @@ import {
   isMindMapBackgroundPresetId,
   type MindMapBackgroundPresetId,
 } from "./features/editor/backgroundPresets";
-import { NODE_HEIGHT } from "./features/editor/constants";
+import {
+  NODE_CARD_HEIGHT,
+  NODE_LINE_HEIGHT,
+  NODE_WIDTH,
+} from "./features/editor/constants";
 
 export type NodeColor = "slate" | "teal" | "amber" | "coral" | "violet";
 export const MINDMAP_CARD_LAYOUT = "mindmap-card";
@@ -17,11 +21,33 @@ export const MINDMAP_LAYOUT_TYPES = [
   LOGIC_CHART_LINE_LAYOUT,
 ] as const;
 export type MindMapLayoutType = (typeof MINDMAP_LAYOUT_TYPES)[number];
+export const MINDMAP_NODE_KINDS = [
+  "text",
+  "image",
+  "link",
+  "emoji",
+] as const;
+export type MindMapNodeKind = (typeof MINDMAP_NODE_KINDS)[number];
+export type MindMapNodeDataByKind = {
+  text: Record<string, never>;
+  image: { imageUrl: string };
+  link: { url: string };
+  emoji: { emoji: string };
+};
+export type MindMapNodeData = MindMapNodeDataByKind[MindMapNodeKind];
+export const MINDMAP_NODE_KIND_LABELS: Record<MindMapNodeKind, string> = {
+  text: "Text",
+  image: "Image",
+  link: "Link",
+  emoji: "Emoji",
+};
 
 export type MindMapNode = {
   id: string;
   title: string;
   notes: string;
+  kind: MindMapNodeKind;
+  data: MindMapNodeData;
   color: NodeColor;
   classicDirection?: -1 | 1;
   x: number;
@@ -68,6 +94,31 @@ export function isLogicChartLayoutType(
   );
 }
 
+export function getNodeHeightForLayout(
+  layoutType: MindMapLayoutType,
+  node?: MindMapNode,
+): number {
+  if (layoutType === MINDMAP_LINE_LAYOUT || layoutType === LOGIC_CHART_LINE_LAYOUT) {
+    return NODE_LINE_HEIGHT;
+  }
+
+  if (!node) {
+    return NODE_CARD_HEIGHT;
+  }
+
+  return getMindMapCardNodeHeight(node);
+}
+
+export function getNodeSizeForLayout(
+  layoutType: MindMapLayoutType,
+  node?: MindMapNode,
+): { width: number; height: number } {
+  return {
+    width: NODE_WIDTH,
+    height: getNodeHeightForLayout(layoutType, node),
+  };
+}
+
 export const NODE_COLORS: Record<
   NodeColor,
   { label: string; accent: string; surface: string; glow: string }
@@ -107,16 +158,265 @@ export const NODE_COLORS: Record<
 const ROOT_X = 1460;
 const ROOT_Y = 860;
 const HORIZONTAL_GAP = 300;
-const VERTICAL_GAP = 170;
+const VERTICAL_GAP = 200;
+
+type CreateMindMapNodeParams = Pick<
+  MindMapNode,
+  "title" | "x" | "y" | "parentId" | "color"
+> &
+  Partial<Omit<MindMapNode, "id" | "title" | "x" | "y" | "parentId" | "color">>;
+
+export function createDefaultMindMapNodeData(
+  kind: MindMapNodeKind,
+): MindMapNodeData {
+  switch (kind) {
+    case "image":
+      return { imageUrl: "" };
+    case "link":
+      return { url: "" };
+    case "emoji":
+      return { emoji: "" };
+    case "text":
+    default:
+      return {};
+  }
+}
+
+export function hydrateMindMapNode(node: MindMapNode): MindMapNode {
+  const rawKind = node.kind as unknown;
+  const kind = isMindMapNodeKind(rawKind) ? rawKind : "text";
+  const rawData = (node as Partial<MindMapNode>).data;
+  const data = normalizeMindMapNodeData(kind, rawData);
+
+  if (
+    rawKind === kind &&
+    isMindMapNodeDataEquivalent(kind, rawData, data)
+  ) {
+    return node;
+  }
+
+  return {
+    ...node,
+    kind,
+    data,
+  };
+}
+
+export function setMindMapNodeKind(
+  node: MindMapNode,
+  kind: MindMapNodeKind,
+): MindMapNode {
+  if (node.kind === kind) {
+    return node;
+  }
+
+  return {
+    ...node,
+    kind,
+    data: convertMindMapNodeData(node, kind),
+  };
+}
+
+export function getMindMapNodeMediaUrl(node: MindMapNode): string {
+  return node.kind === "image"
+    ? normalizeMindMapNodeData("image", node.data).imageUrl.trim()
+    : "";
+}
+
+export function getMindMapNodeLinkUrl(node: MindMapNode): string {
+  if (node.kind !== "link") {
+    return "";
+  }
+
+  return normalizeMindMapNodeData("link", node.data).url.trim();
+}
+
+export function getMindMapNodeEmoji(node: MindMapNode): string {
+  if (node.kind !== "emoji") {
+    return "";
+  }
+
+  return normalizeMindMapNodeData("emoji", node.data).emoji.trim();
+}
+
+export function getMindMapNodeDisplayTitle(node: MindMapNode): string {
+  const trimmedTitle = node.title.trim();
+  if (trimmedTitle) {
+    return trimmedTitle;
+  }
+
+  if (node.kind === "link") {
+    return getMindMapNodeLinkUrl(node) || MINDMAP_NODE_KIND_LABELS.link;
+  }
+
+  if (node.kind === "emoji") {
+    const emoji = getMindMapNodeEmoji(node);
+    return emoji ? `Emoji ${emoji}` : MINDMAP_NODE_KIND_LABELS.emoji;
+  }
+
+  return MINDMAP_NODE_KIND_LABELS[node.kind];
+}
+
+export function getMindMapNodeDetailText(node: MindMapNode): string {
+  if (node.kind === "text") {
+    return node.notes.trim();
+  }
+
+  if (node.kind === "image") {
+    return (node.notes || getMindMapNodeMediaUrl(node) || "Add an image source").trim();
+  }
+
+  if (node.kind === "link") {
+    return (
+      node.notes || getMindMapNodeLinkUrl(node) || "Add a destination URL"
+    ).trim();
+  }
+
+  return (node.notes || "Emoji node").trim();
+}
+
+export function getMindMapNodeLineTitle(node: MindMapNode): string {
+  const title = getMindMapNodeDisplayTitle(node);
+  const hasCustomTitle = node.title.trim().length > 0;
+
+  switch (node.kind) {
+    case "image":
+      return hasCustomTitle ? `Image: ${title}` : MINDMAP_NODE_KIND_LABELS.image;
+    case "link":
+      return `Link: ${title}`;
+    case "emoji": {
+      const emoji = getMindMapNodeEmoji(node);
+      if (!hasCustomTitle) {
+        return emoji || MINDMAP_NODE_KIND_LABELS.emoji;
+      }
+
+      return emoji ? `${emoji} ${title}` : title;
+    }
+    case "text":
+    default:
+      return title;
+  }
+}
+
+function getMindMapCardNodeHeight(node: MindMapNode): number {
+  const titleLines = estimateTextLineCount(getMindMapNodeDisplayTitle(node), 16, 2);
+  const detailText = getMindMapNodeDetailText(node);
+  const detailLines =
+    node.kind === "text" && !detailText
+      ? 0
+      : estimateTextLineCount(
+          detailText,
+          node.kind === "link" ? 26 : 22,
+          2,
+        );
+
+  switch (node.kind) {
+    case "image":
+      return clampNodeHeight(92 + titleLines * 20 + detailLines * 18, 120, 164);
+    case "link":
+      return clampNodeHeight(
+        68 + titleLines * 20 + detailLines * 18 + (getMindMapNodeLinkUrl(node) ? 42 : 0),
+        122,
+        176,
+      );
+    case "emoji":
+      return clampNodeHeight(88 + titleLines * 20 + detailLines * 18, 120, 164);
+    case "text":
+    default:
+      return clampNodeHeight(
+        96 + titleLines * 22 + detailLines * 18 + (detailLines > 0 ? 8 : 0),
+        120,
+        176,
+      );
+  }
+}
+
+function estimateTextLineCount(
+  value: string,
+  charsPerLine: number,
+  maxLines: number,
+): number {
+  const normalizedValue = value.replace(/\r/g, "").trim();
+  if (!normalizedValue) {
+    return 0;
+  }
+
+  const paragraphs = normalizedValue.split("\n");
+  let totalLines = 0;
+
+  for (const paragraph of paragraphs) {
+    if (totalLines >= maxLines) {
+      break;
+    }
+
+    const normalizedParagraph = paragraph.trim().replace(/\s+/g, " ");
+    if (!normalizedParagraph) {
+      continue;
+    }
+
+    totalLines += Math.max(1, Math.ceil(normalizedParagraph.length / charsPerLine));
+  }
+
+  return Math.max(1, Math.min(totalLines, maxLines));
+}
+
+function clampNodeHeight(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function getMindMapNodeSearchTexts(node: MindMapNode): string[] {
+  const values = [
+    node.title,
+    node.notes,
+    MINDMAP_NODE_KIND_LABELS[node.kind],
+  ];
+
+  const mediaUrl = getMindMapNodeMediaUrl(node);
+  if (mediaUrl) {
+    values.push(mediaUrl);
+  }
+
+  const linkUrl = getMindMapNodeLinkUrl(node);
+  if (linkUrl) {
+    values.push(linkUrl);
+  }
+
+  const emoji = getMindMapNodeEmoji(node);
+  if (emoji) {
+    values.push(emoji);
+  }
+
+  return values;
+}
+
+export function normalizeExternalUrl(value: string): string {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) {
+    return "";
+  }
+
+  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmedValue)) {
+    return trimmedValue;
+  }
+
+  if (trimmedValue.startsWith("//")) {
+    return `https:${trimmedValue}`;
+  }
+
+  return `https://${trimmedValue}`;
+}
 
 export function createMindMapNode(
-  params: Partial<MindMapNode> &
-    Pick<MindMapNode, "title" | "x" | "y" | "parentId" | "color">,
+  params: CreateMindMapNodeParams,
 ): MindMapNode {
+  const kind = isMindMapNodeKind(params.kind) ? params.kind : "text";
+
   return {
     id: createId(),
     title: params.title,
     notes: params.notes ?? "",
+    kind,
+    data: normalizeMindMapNodeData(kind, params.data),
     color: params.color,
     classicDirection: params.classicDirection,
     x: params.x,
@@ -159,6 +459,7 @@ export function cloneMindMapDocument(
         id,
         {
           ...node,
+          data: cloneMindMapNodeData(node.kind, node.data),
           childrenIds: [...node.childrenIds],
         },
       ]),
@@ -203,8 +504,20 @@ export function hydrateMindMapDocument(
 ): MindMapDocument {
   const layoutType = getMindMapLayoutType(document);
   const backgroundPresetId = getMindMapBackgroundPresetId(document);
+  let hasHydratedNodes = false;
+  const hydratedNodes = Object.fromEntries(
+    Object.entries(document.nodes).map(([nodeId, node]) => {
+      const hydratedNode = hydrateMindMapNode(node);
+      if (hydratedNode !== node) {
+        hasHydratedNodes = true;
+      }
+
+      return [nodeId, hydratedNode];
+    }),
+  ) as Record<string, MindMapNode>;
 
   if (
+    !hasHydratedNodes &&
     document.layoutType === layoutType &&
     document.backgroundPresetId === backgroundPresetId
   ) {
@@ -213,6 +526,7 @@ export function hydrateMindMapDocument(
 
   return {
     ...document,
+    nodes: hasHydratedNodes ? hydratedNodes : document.nodes,
     backgroundPresetId,
     layoutType,
   };
@@ -628,7 +942,7 @@ export function loadStoredMindMap(): MindMapDocument | null {
   try {
     const parsed = JSON.parse(raw) as MindMapDocument;
     if (isMindMapDocument(parsed)) {
-      return parsed;
+      return hydrateMindMapDocument(parsed);
     }
   } catch {
     return null;
@@ -638,7 +952,10 @@ export function loadStoredMindMap(): MindMapDocument | null {
 }
 
 export function saveMindMap(document: MindMapDocument): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(document));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(hydrateMindMapDocument(document)),
+  );
 }
 
 export function loadStoredTemplateId(): string | null {
@@ -680,16 +997,27 @@ function isMindMapLayoutType(value: unknown): value is MindMapLayoutType {
   );
 }
 
+function isMindMapNodeKind(value: unknown): value is MindMapNodeKind {
+  return (
+    typeof value === "string" &&
+    MINDMAP_NODE_KINDS.includes(value as MindMapNodeKind)
+  );
+}
+
 function isMindMapNode(value: unknown): value is MindMapNode {
   if (!value || typeof value !== "object") {
     return false;
   }
 
   const node = value as Partial<MindMapNode>;
+  const kind = isMindMapNodeKind(node.kind) ? node.kind : "text";
+
   return (
     typeof node.id === "string" &&
     typeof node.title === "string" &&
     typeof node.notes === "string" &&
+    (node.kind === undefined || isMindMapNodeKind(node.kind)) &&
+    isMindMapNodeDataValue(kind, node.data) &&
     typeof node.color === "string" &&
     (node.classicDirection === undefined ||
       node.classicDirection === -1 ||
@@ -701,6 +1029,152 @@ function isMindMapNode(value: unknown): value is MindMapNode {
     node.childrenIds.every((childId) => typeof childId === "string") &&
     typeof node.collapsed === "boolean"
   );
+}
+
+function cloneMindMapNodeData(
+  kind: MindMapNodeKind,
+  data: MindMapNodeData,
+): MindMapNodeData {
+  switch (kind) {
+    case "image":
+      return { imageUrl: normalizeMindMapNodeData("image", data).imageUrl };
+    case "link":
+      return { url: normalizeMindMapNodeData("link", data).url };
+    case "emoji":
+      return { emoji: normalizeMindMapNodeData("emoji", data).emoji };
+    case "text":
+    default:
+      return {};
+  }
+}
+
+function convertMindMapNodeData(
+  node: MindMapNode,
+  kind: MindMapNodeKind,
+): MindMapNodeData {
+  if (kind === "image") {
+    return {
+      imageUrl:
+        node.kind === "image"
+          ? normalizeMindMapNodeData("image", node.data).imageUrl
+          : "",
+    };
+  }
+
+  if (kind === "link") {
+    return node.kind === "link"
+      ? { url: normalizeMindMapNodeData("link", node.data).url }
+      : { url: "" };
+  }
+
+  if (kind === "emoji") {
+    return node.kind === "emoji"
+      ? { emoji: normalizeMindMapNodeData("emoji", node.data).emoji }
+      : { emoji: "" };
+  }
+
+  return {};
+}
+
+function normalizeMindMapNodeData(
+  kind: "text",
+  data: unknown,
+): MindMapNodeDataByKind["text"];
+function normalizeMindMapNodeData(
+  kind: "image",
+  data: unknown,
+): MindMapNodeDataByKind["image"];
+function normalizeMindMapNodeData(
+  kind: "link",
+  data: unknown,
+): MindMapNodeDataByKind["link"];
+function normalizeMindMapNodeData(
+  kind: "emoji",
+  data: unknown,
+): MindMapNodeDataByKind["emoji"];
+function normalizeMindMapNodeData(
+  kind: MindMapNodeKind,
+  data: unknown,
+): MindMapNodeData;
+function normalizeMindMapNodeData(
+  kind: MindMapNodeKind,
+  data: unknown,
+): MindMapNodeData {
+  if (!isRecord(data)) {
+    return createDefaultMindMapNodeData(kind);
+  }
+
+  switch (kind) {
+    case "image":
+      return {
+        imageUrl: typeof data.imageUrl === "string" ? data.imageUrl : "",
+      };
+    case "link":
+      return {
+        url: typeof data.url === "string" ? data.url : "",
+      };
+    case "emoji":
+      return {
+        emoji: typeof data.emoji === "string" ? data.emoji : "",
+      };
+    case "text":
+    default:
+      return {};
+  }
+}
+
+function isMindMapNodeDataValue(
+  kind: MindMapNodeKind,
+  value: unknown,
+): boolean {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  switch (kind) {
+    case "image":
+      return value.imageUrl === undefined || typeof value.imageUrl === "string";
+    case "link":
+      return value.url === undefined || typeof value.url === "string";
+    case "emoji":
+      return value.emoji === undefined || typeof value.emoji === "string";
+    case "text":
+    default:
+      return true;
+  }
+}
+
+function isMindMapNodeDataEquivalent(
+  kind: MindMapNodeKind,
+  value: unknown,
+  normalizedValue: MindMapNodeData,
+): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  switch (kind) {
+    case "image":
+      return (
+        normalizeMindMapNodeData("image", value).imageUrl ===
+        normalizeMindMapNodeData("image", normalizedValue).imageUrl
+      );
+    case "link":
+      return value.url === normalizeMindMapNodeData("link", normalizedValue).url;
+    case "emoji":
+      return value.emoji === normalizeMindMapNodeData("emoji", normalizedValue).emoji;
+    case "text":
+    default:
+      return Object.keys(value).length === 0;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 export const MIND_MAP_TEMPLATES: MindMapTemplate[] = [
@@ -847,6 +1321,7 @@ function getSubtreeVerticalBounds(
   document: MindMapDocument,
   nodeId: string,
 ): { minY: number; maxY: number } | null {
+  const layoutType = getMindMapLayoutType(document);
   let minY = Number.POSITIVE_INFINITY;
   let maxY = Number.NEGATIVE_INFINITY;
 
@@ -856,8 +1331,9 @@ function getSubtreeVerticalBounds(
       return;
     }
 
+    const nodeHeight = getNodeHeightForLayout(layoutType, currentNode);
     minY = Math.min(minY, currentNode.y);
-    maxY = Math.max(maxY, currentNode.y + NODE_HEIGHT);
+    maxY = Math.max(maxY, currentNode.y + nodeHeight);
   });
 
   if (!Number.isFinite(minY) || !Number.isFinite(maxY)) {

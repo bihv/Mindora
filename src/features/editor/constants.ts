@@ -1,6 +1,8 @@
 export const HISTORY_LIMIT = 80;
 export const NODE_WIDTH = 220;
-export const NODE_HEIGHT = 104;
+export const NODE_CARD_HEIGHT = 176;
+export const NODE_LINE_HEIGHT = 120;
+export const NODE_HEIGHT = NODE_CARD_HEIGHT;
 export const NODE_CONTEXT_MENU_WIDTH = 152;
 export const NODE_CONTEXT_MENU_GAP = 12;
 export const CANVAS_PADDING = 18;

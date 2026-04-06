@@ -19,8 +19,9 @@
   color: var(--text-secondary);
 }
 
-.field input,
-.field textarea {
+.field > input,
+.field > select,
+.field > textarea {
   width: 100%;
   padding: 11px 13px;
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -32,15 +33,61 @@
     background 160ms ease;
 }
 
-.field input:focus,
-.field textarea:focus {
+.field > input:focus,
+.field > select:focus,
+.field > textarea:focus {
   border-color: rgba(136, 223, 203, 0.5);
   background: rgba(255, 255, 255, 0.08);
 }
 
-.field textarea {
+.field > select {
+  color: var(--text-primary);
+  appearance: none;
+}
+
+.field > textarea {
   min-height: 136px;
   resize: vertical;
+}
+
+.fieldHint {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.emojiPickerWidget {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.emojiPickerLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 380px;
+  padding: 20px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.emojiPickerWidget :global(.EmojiPickerReact) {
+  --epr-bg-color: rgba(15, 24, 38, 0.96);
+  --epr-category-label-bg-color: rgba(15, 24, 38, 0.96);
+  --epr-hover-bg-color: rgba(255, 255, 255, 0.06);
+  --epr-search-input-bg-color: rgba(255, 255, 255, 0.04);
+  --epr-search-border-color: rgba(255, 255, 255, 0.08);
+  --epr-search-input-text-color: var(--text-primary);
+  --epr-text-color: var(--text-primary);
+  --epr-muted-color: var(--text-secondary);
+  --epr-picker-border-radius: 16px;
+  --epr-picker-border-color: transparent;
+  --epr-preview-height: 0px;
+  --epr-category-icon-active-color: #88dfcb;
+  border: none;
 }
 
 .colorGrid {
@@ -94,6 +141,10 @@
 }
 
 @media (max-width: 720px) {
+  .emojiPickerWidget :global(.EmojiPickerReact) {
+    --epr-emoji-size: 24px;
+  }
+
   .colorGrid {
     grid-template-columns: 1fr;
   }

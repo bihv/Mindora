@@ -12,6 +12,8 @@ import type {
 } from "./types";
 import {
   getClassicRootBranchDirection,
+  getMindMapLayoutType,
+  getNodeHeightForLayout,
   isLogicChartLayoutType,
   type MindMapDocument,
   type MindMapLayoutType,
@@ -26,16 +28,7 @@ type AutoLayoutResult = {
 type TreeLayoutConfig = {
   horizontalGap: number;
   verticalGap: number;
-};
-
-const CLASSIC_LAYOUT_CONFIG: TreeLayoutConfig = {
-  horizontalGap: AUTO_LAYOUT_HORIZONTAL_GAP,
-  verticalGap: AUTO_LAYOUT_VERTICAL_GAP,
-};
-
-const LOGIC_CHART_LAYOUT_CONFIG: TreeLayoutConfig = {
-  horizontalGap: 320,
-  verticalGap: 10,
+  layoutType: MindMapLayoutType;
 };
 
 export function getConnectorPoints(
@@ -140,7 +133,7 @@ export function getConnectorFocusState(
 export function buildAutoLayoutPositions(
   document: MindMapDocument,
 ): Record<string, Position> {
-  return buildMindMapLayoutPositions(document);
+  return buildLayoutPositions(document, getMindMapLayoutType(document));
 }
 
 export function buildLayoutPositions(
@@ -148,13 +141,19 @@ export function buildLayoutPositions(
   layoutType: MindMapLayoutType,
 ): Record<string, Position> {
   return isLogicChartLayoutType(layoutType)
-    ? buildLogicChartLayoutPositions(document)
-    : buildMindMapLayoutPositions(document);
+    ? buildLogicChartLayoutPositions(document, layoutType)
+    : buildMindMapLayoutPositions(document, layoutType);
 }
 
 export function buildMindMapLayoutPositions(
   document: MindMapDocument,
+  layoutType: MindMapLayoutType,
 ): Record<string, Position> {
+  const config: TreeLayoutConfig = {
+    horizontalGap: AUTO_LAYOUT_HORIZONTAL_GAP,
+    verticalGap: AUTO_LAYOUT_VERTICAL_GAP,
+    layoutType,
+  };
   const positions = Object.fromEntries(
     Object.values(document.nodes).map((node) => [node.id, { x: node.x, y: node.y }]),
   ) as Record<string, Position>;
@@ -165,7 +164,7 @@ export function buildMindMapLayoutPositions(
   }
 
   positions[rootNode.id] = { x: rootNode.x, y: rootNode.y };
-  const rootCenterY = rootNode.y + NODE_HEIGHT / 2;
+  const rootCenterY = rootNode.y + getNodeHeightForLayout(layoutType, rootNode) / 2;
   const leftChildren: string[] = [];
   const rightChildren: string[] = [];
 
@@ -197,7 +196,7 @@ export function buildMindMapLayoutPositions(
           document,
           childId,
           direction,
-          CLASSIC_LAYOUT_CONFIG,
+          config,
         );
       })
       .filter((layout): layout is AutoLayoutResult => layout !== null);
@@ -205,19 +204,21 @@ export function buildMindMapLayoutPositions(
     const offsets = stackAutoLayoutSiblings(
       layouts,
       1,
-      CLASSIC_LAYOUT_CONFIG.verticalGap,
+      config.verticalGap,
     );
 
     layouts.forEach((layout, index) => {
       const offsetY = offsets[index] ?? 0;
 
       Object.entries(layout.positions).forEach(([nodeId, position]) => {
+        const currentNode = document.nodes[nodeId];
+        const nodeHeight = getNodeHeightForLayout(layoutType, currentNode);
         positions[nodeId] = {
           x:
             rootNode.x +
-            direction * CLASSIC_LAYOUT_CONFIG.horizontalGap +
+            direction * config.horizontalGap +
             position.x,
-          y: rootCenterY + offsetY + position.y - NODE_HEIGHT / 2,
+          y: rootCenterY + offsetY + position.y - nodeHeight / 2,
         };
       });
     });
@@ -231,7 +232,13 @@ export function buildMindMapLayoutPositions(
 
 export function buildLogicChartLayoutPositions(
   document: MindMapDocument,
+  layoutType: MindMapLayoutType,
 ): Record<string, Position> {
+  const config: TreeLayoutConfig = {
+    horizontalGap: 320,
+    verticalGap: 10,
+    layoutType,
+  };
   const positions = Object.fromEntries(
     Object.values(document.nodes).map((node) => [node.id, { x: node.x, y: node.y }]),
   ) as Record<string, Position>;
@@ -242,7 +249,7 @@ export function buildLogicChartLayoutPositions(
   }
 
   positions[rootNode.id] = { x: rootNode.x, y: rootNode.y };
-  const rootCenterY = rootNode.y + NODE_HEIGHT / 2;
+  const rootCenterY = rootNode.y + getNodeHeightForLayout(layoutType, rootNode) / 2;
   const layouts = rootNode.childrenIds
     .map((childId) => {
       if (!document.nodes[childId]) {
@@ -253,23 +260,25 @@ export function buildLogicChartLayoutPositions(
         document,
         childId,
         1,
-        LOGIC_CHART_LAYOUT_CONFIG,
+        config,
       );
     })
     .filter((layout): layout is AutoLayoutResult => layout !== null);
   const offsets = stackAutoLayoutSiblings(
     layouts,
     1,
-    LOGIC_CHART_LAYOUT_CONFIG.verticalGap,
+    config.verticalGap,
   );
 
   layouts.forEach((layout, index) => {
     const offsetY = offsets[index] ?? 0;
 
     Object.entries(layout.positions).forEach(([nodeId, position]) => {
+      const currentNode = document.nodes[nodeId];
+      const nodeHeight = getNodeHeightForLayout(layoutType, currentNode);
       positions[nodeId] = {
-        x: rootNode.x + LOGIC_CHART_LAYOUT_CONFIG.horizontalGap + position.x,
-        y: rootCenterY + offsetY + position.y - NODE_HEIGHT / 2,
+        x: rootNode.x + config.horizontalGap + position.x,
+        y: rootCenterY + offsetY + position.y - nodeHeight / 2,
       };
     });
   });
@@ -284,12 +293,13 @@ function buildDirectedTreeLayout(
   config: TreeLayoutConfig,
 ): AutoLayoutResult {
   const node = document.nodes[nodeId];
+  const nodeHeight = getNodeHeightForLayout(config.layoutType, node);
   const baseLayout: AutoLayoutResult = {
     positions: {
       [nodeId]: { x: 0, y: 0 },
     },
-    topContour: [-NODE_HEIGHT / 2],
-    bottomContour: [NODE_HEIGHT / 2],
+    topContour: [-nodeHeight / 2],
+    bottomContour: [nodeHeight / 2],
   };
 
   if (!node || node.childrenIds.length === 0) {

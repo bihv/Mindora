@@ -16,10 +16,12 @@ import {
   reparentNode,
   setMindMapBackgroundPresetId,
   setMindMapLayoutType,
+  setMindMapNodeKind,
   syncClassicRootBranchDirections,
   updateNodePosition,
   type MindMapDocument,
   type MindMapLayoutType,
+  type MindMapNodeKind,
   type NodeColor,
 } from "../../../mindmap";
 import { HISTORY_LIMIT } from "../constants";
@@ -410,9 +412,10 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
           ...node,
           title: value,
         };
+        applyLogicChartLayoutIfNeeded(draft);
       });
     },
-    [commitDocument],
+    [applyLogicChartLayoutIfNeeded, commitDocument],
   );
 
   const handleNodeNotesChange = useCallback(
@@ -427,9 +430,85 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
           ...node,
           notes: value,
         };
+        applyLogicChartLayoutIfNeeded(draft);
       });
     },
-    [commitDocument],
+    [applyLogicChartLayoutIfNeeded, commitDocument],
+  );
+
+  const handleNodeKindChange = useCallback(
+    (nodeId: string, kind: MindMapNodeKind) => {
+      commitDocument((draft) => {
+        const node = draft.nodes[nodeId];
+        if (!node) {
+          return;
+        }
+
+        draft.nodes[nodeId] = setMindMapNodeKind(node, kind);
+        applyLogicChartLayoutIfNeeded(draft);
+      });
+    },
+    [applyLogicChartLayoutIfNeeded, commitDocument],
+  );
+
+  const handleNodeImageUrlChange = useCallback(
+    (nodeId: string, value: string) => {
+      commitDocument((draft) => {
+        const node = draft.nodes[nodeId];
+        if (!node || node.kind !== "image") {
+          return;
+        }
+
+        draft.nodes[nodeId] = {
+          ...node,
+          data: {
+            imageUrl: value,
+          },
+        };
+        applyLogicChartLayoutIfNeeded(draft);
+      });
+    },
+    [applyLogicChartLayoutIfNeeded, commitDocument],
+  );
+
+  const handleNodeLinkUrlChange = useCallback(
+    (nodeId: string, value: string) => {
+      commitDocument((draft) => {
+        const node = draft.nodes[nodeId];
+        if (!node || node.kind !== "link") {
+          return;
+        }
+
+        draft.nodes[nodeId] = {
+          ...node,
+          data: {
+            url: value,
+          },
+        };
+        applyLogicChartLayoutIfNeeded(draft);
+      });
+    },
+    [applyLogicChartLayoutIfNeeded, commitDocument],
+  );
+
+  const handleNodeEmojiChange = useCallback(
+    (nodeId: string, value: string) => {
+      commitDocument((draft) => {
+        const node = draft.nodes[nodeId];
+        if (!node || node.kind !== "emoji") {
+          return;
+        }
+
+        draft.nodes[nodeId] = {
+          ...node,
+          data: {
+            emoji: value,
+          },
+        };
+        applyLogicChartLayoutIfNeeded(draft);
+      });
+    },
+    [applyLogicChartLayoutIfNeeded, commitDocument],
   );
 
   const handleNodeColorChange = useCallback(
@@ -709,6 +788,10 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleExportFile,
       handleLayoutTypeChange,
       handleNodeColorChange,
+      handleNodeEmojiChange,
+      handleNodeImageUrlChange,
+      handleNodeKindChange,
+      handleNodeLinkUrlChange,
       handleNodeNotesChange,
       handleOpenFile,
       handleOpenRecentFile,
@@ -755,6 +838,10 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleExportFile,
       handleLayoutTypeChange,
       handleNodeColorChange,
+      handleNodeEmojiChange,
+      handleNodeImageUrlChange,
+      handleNodeKindChange,
+      handleNodeLinkUrlChange,
       handleNodeNotesChange,
       handleOpenFile,
       handleOpenRecentFile,
