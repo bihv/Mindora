@@ -29,7 +29,7 @@
 
 .connectionsPath {
   fill: none;
-  stroke-width: 3;
+  stroke-width: calc(3px * var(--viewport-scale, 1));
   stroke-linecap: round;
   opacity: 0.72;
   transition:
@@ -41,43 +41,43 @@
 
 .connectionsPathLineage {
   opacity: 0.92;
-  stroke-width: 3.4;
+  stroke-width: calc(3.4px * var(--viewport-scale, 1));
   filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.12));
 }
 
 .connectionsPathDescendant {
   opacity: 0.38;
-  stroke-width: 2.8;
+  stroke-width: calc(2.8px * var(--viewport-scale, 1));
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.04));
 }
 
 .connectionsPathDimmed {
   opacity: 0.12;
-  stroke-width: 2.4;
+  stroke-width: calc(2.4px * var(--viewport-scale, 1));
   filter: none;
 }
 
 .connectionsPathPreview {
   opacity: 0.92;
-  stroke-width: 3.8;
+  stroke-width: calc(3.8px * var(--viewport-scale, 1));
   stroke-dasharray: 9 7;
   filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.18));
 }
 
 .connectionsPathPreviewSnapped {
   opacity: 1;
-  stroke-width: 4.2;
+  stroke-width: calc(4.2px * var(--viewport-scale, 1));
   stroke-dasharray: none;
 }
 
 .canvasStageOrganic .connectionsPath {
-  stroke-width: 3.4;
+  stroke-width: calc(3.4px * var(--viewport-scale, 1));
   opacity: 0.88;
   filter: none;
 }
 
 .canvasStageOrganic .connectionsPathLineage {
-  stroke-width: 4;
+  stroke-width: calc(4px * var(--viewport-scale, 1));
 }
 
 .canvasStageOrganic .connectionsPathDescendant {
@@ -90,6 +90,10 @@
 }
 
 .mindNode {
+  --node-scale: 1;
+  --node-hover-x: 0px;
+  --node-hover-y: 0px;
+  --node-drag-scale: 1;
   position: absolute;
   z-index: 2;
   width: 220px;
@@ -111,10 +115,15 @@
     filter 160ms ease;
   opacity: 1;
   filter: saturate(1) brightness(1);
+  transform:
+    translate(var(--node-hover-x), var(--node-hover-y))
+    scale(var(--node-scale))
+    scale(var(--node-drag-scale));
+  transform-origin: top left;
 }
 
 .mindNode:hover {
-  transform: translateY(-2px);
+  --node-hover-y: -2px;
 }
 
 .mindNodeOrganic {
@@ -130,7 +139,8 @@
 }
 
 .mindNodeOrganic:hover {
-  transform: translateX(2px);
+  --node-hover-x: 2px;
+  --node-hover-y: 0px;
 }
 
 .mindNodeOrganicRoot {
@@ -211,7 +221,7 @@
 
 .mindNodeDragging {
   cursor: grabbing;
-  transform: scale(1.01);
+  --node-drag-scale: 1.01;
 }
 
 .mindNodeContent {

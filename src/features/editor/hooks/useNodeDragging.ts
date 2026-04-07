@@ -21,6 +21,7 @@ type UseNodeDraggingArgs = {
   latestDocumentRef: MutableRefObject<MindMapDocument | null>;
   mindMap: MindMapDocument;
   selectNode: (nodeId: string, options?: SelectNodeOptions) => void;
+  viewportScale: number;
 };
 
 export function useNodeDragging({
@@ -28,6 +29,7 @@ export function useNodeDragging({
   latestDocumentRef,
   mindMap,
   selectNode,
+  viewportScale,
 }: UseNodeDraggingArgs) {
   const [dragging, setDragging] = useState<DraggingState | null>(null);
 
@@ -49,8 +51,10 @@ export function useNodeDragging({
 
         const node = document.nodes[current.nodeId];
         const origin = current.originPositions[current.nodeId];
-        let deltaX = event.clientX - current.pointerOrigin.x;
-        const deltaY = event.clientY - current.pointerOrigin.y;
+        let deltaX =
+          (event.clientX - current.pointerOrigin.x) / current.viewportScale;
+        const deltaY =
+          (event.clientY - current.pointerOrigin.y) / current.viewportScale;
 
         if (node?.parentId) {
           const parent = document.nodes[node.parentId];
@@ -84,7 +88,8 @@ export function useNodeDragging({
         }
 
         const moved =
-          Math.abs(current.delta.x) > 2 || Math.abs(current.delta.y) > 2;
+          Math.abs(current.delta.x * current.viewportScale) > 2 ||
+          Math.abs(current.delta.y * current.viewportScale) > 2;
 
         if (moved) {
           const positions = Object.fromEntries(
@@ -143,9 +148,10 @@ export function useNodeDragging({
         pointerOrigin: { x: event.clientX, y: event.clientY },
         originPositions,
         delta: { x: 0, y: 0 },
+        viewportScale,
       });
     },
-    [mindMap, selectNode],
+    [mindMap, selectNode, viewportScale],
   );
 
   return {

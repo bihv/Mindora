@@ -18,6 +18,7 @@ export type MindMapBackgroundPreset = {
 type CameraLike = {
   x: number;
   y: number;
+  scale?: number;
 };
 
 type ExportBackground = {
@@ -77,7 +78,10 @@ export function getCanvasBackgroundStyle(
   backgroundPresetId: MindMapBackgroundPresetId,
   camera: CameraLike,
 ): CanvasBackgroundStyle {
-  const gridPosition = `${-camera.x}px ${-camera.y}px`;
+  const viewportScale = camera.scale ?? 1;
+  const gridPosition = `${-camera.x * viewportScale}px ${-camera.y * viewportScale}px`;
+  const scaledGridSize = (size: number) =>
+    `${size * viewportScale}px ${size * viewportScale}px`;
 
   switch (backgroundPresetId) {
     case "aurora-mesh":
@@ -98,7 +102,7 @@ export function getCanvasBackgroundStyle(
           "center",
         ].join(", "),
         backgroundRepeat: "repeat, repeat, no-repeat, no-repeat, no-repeat",
-        backgroundSize: "40px 40px, 40px 40px, 100% 100%, 100% 100%, 100% 100%",
+        backgroundSize: `${scaledGridSize(40)}, ${scaledGridSize(40)}, 100% 100%, 100% 100%, 100% 100%`,
       };
     case "ember-glow":
       return {
@@ -118,7 +122,7 @@ export function getCanvasBackgroundStyle(
           "center",
         ].join(", "),
         backgroundRepeat: "repeat, repeat, no-repeat, no-repeat, no-repeat",
-        backgroundSize: "44px 44px, 44px 44px, 100% 100%, 100% 100%, 100% 100%",
+        backgroundSize: `${scaledGridSize(44)}, ${scaledGridSize(44)}, 100% 100%, 100% 100%, 100% 100%`,
       };
     case "evergreen-grid":
       return {
@@ -138,7 +142,7 @@ export function getCanvasBackgroundStyle(
           "center",
         ].join(", "),
         backgroundRepeat: "repeat, repeat, no-repeat, no-repeat, no-repeat",
-        backgroundSize: "46px 46px, 46px 46px, 100% 100%, 100% 100%, 100% 100%",
+        backgroundSize: `${scaledGridSize(46)}, ${scaledGridSize(46)}, 100% 100%, 100% 100%, 100% 100%`,
       };
     case "nocturne-dots":
       return {
@@ -156,7 +160,7 @@ export function getCanvasBackgroundStyle(
           "center",
         ].join(", "),
         backgroundRepeat: "repeat, no-repeat, no-repeat, no-repeat",
-        backgroundSize: "36px 36px, 100% 100%, 100% 100%, 100% 100%",
+        backgroundSize: `${scaledGridSize(36)}, 100% 100%, 100% 100%, 100% 100%`,
       };
     case "midnight-grid":
     default:
@@ -175,7 +179,7 @@ export function getCanvasBackgroundStyle(
           "center",
         ].join(", "),
         backgroundRepeat: "repeat, repeat, no-repeat, no-repeat",
-        backgroundSize: "44px 44px, 44px 44px, 100% 100%, 100% 100%",
+        backgroundSize: `${scaledGridSize(44)}, ${scaledGridSize(44)}, 100% 100%, 100% 100%`,
       };
   }
 }
@@ -183,7 +187,7 @@ export function getCanvasBackgroundStyle(
 export function getBackgroundPreviewStyle(
   backgroundPresetId: MindMapBackgroundPresetId,
 ): CanvasBackgroundStyle {
-  return getCanvasBackgroundStyle(backgroundPresetId, { x: 0, y: 0 });
+  return getCanvasBackgroundStyle(backgroundPresetId, { x: 0, y: 0, scale: 1 });
 }
 
 export function buildExportBackground(

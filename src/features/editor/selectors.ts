@@ -201,6 +201,7 @@ export function buildConnectors(
   visibleNodeIds: string[],
   visibleNodeIdSet: Set<string>,
   stagePositions: Record<string, Position>,
+  viewportScale: number,
   nodeFocusStates: Record<string, NodeFocusState>,
 ): ConnectorItem[] {
   return visibleNodeIds
@@ -220,6 +221,14 @@ export function buildConnectors(
       const childPosition = stagePositions[node.id];
       const parentSize = getNodeSizeForLayout(layoutType, parent);
       const childSize = getNodeSizeForLayout(layoutType, node);
+      const scaledParentSize = {
+        width: parentSize.width * viewportScale,
+        height: parentSize.height * viewportScale,
+      };
+      const scaledChildSize = {
+        width: childSize.width * viewportScale,
+        height: childSize.height * viewportScale,
+      };
       const direction = getBranchDirection(document, node.id);
       const focusState = getConnectorFocusState(
         nodeFocusStates[parent.id] ?? "dimmed",
@@ -235,9 +244,9 @@ export function buildConnectors(
           parentPosition,
           childPosition,
           direction,
-          CONNECTOR_CURVE_OFFSET,
-          parentSize,
-          childSize,
+          CONNECTOR_CURVE_OFFSET * viewportScale,
+          scaledParentSize,
+          scaledChildSize,
         ),
       };
     })
@@ -248,6 +257,7 @@ export function buildReparentPreviewConnector(
   document: MindMapDocument,
   layoutType: MindMapLayoutType,
   stagePositions: Record<string, Position>,
+  viewportScale: number,
   reparenting: NodeReparentingState | null,
 ): ConnectorPreviewItem | null {
   if (!reparenting) {
@@ -284,9 +294,15 @@ export function buildReparentPreviewConnector(
         parentPosition,
         childPosition,
         direction,
-        CONNECTOR_CURVE_OFFSET,
-        parentSize,
-        childSize,
+        CONNECTOR_CURVE_OFFSET * viewportScale,
+        {
+          width: parentSize.width * viewportScale,
+          height: parentSize.height * viewportScale,
+        },
+        {
+          width: childSize.width * viewportScale,
+          height: childSize.height * viewportScale,
+        },
       ),
     };
   }
@@ -299,12 +315,15 @@ export function buildReparentPreviewConnector(
       reparenting.pointerPosition,
       childPosition,
       reparenting.pointerPosition.x <= childPosition.x ? 1 : -1,
-      CONNECTOR_CURVE_OFFSET,
+      CONNECTOR_CURVE_OFFSET * viewportScale,
       {
         width: 0,
         height: 0,
       },
-      getNodeSizeForLayout(layoutType, node),
+      {
+        width: getNodeSizeForLayout(layoutType, node).width * viewportScale,
+        height: getNodeSizeForLayout(layoutType, node).height * viewportScale,
+      },
     ),
   };
 }
@@ -335,6 +354,8 @@ export function buildMinimapData({
   visibleNodeIds,
 }: BuildMinimapDataParams): MinimapData {
   const layoutType = getMindMapLayoutType(document);
+  const visibleWorldWidth = canvasWidth / camera.scale;
+  const visibleWorldHeight = canvasHeight / camera.scale;
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
   let maxX = Number.NEGATIVE_INFINITY;
@@ -357,8 +378,8 @@ export function buildMinimapData({
   if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
     minX = camera.x;
     minY = camera.y;
-    maxX = camera.x + canvasWidth;
-    maxY = camera.y + canvasHeight;
+    maxX = camera.x + visibleWorldWidth;
+    maxY = camera.y + visibleWorldHeight;
   }
 
   minX -= MINIMAP_WORLD_PADDING;
@@ -474,8 +495,8 @@ export function buildMinimapData({
     viewport: {
       x: offsetX + (camera.x - minX) * scale,
       y: offsetY + (camera.y - minY) * scale,
-      width: canvasWidth * scale,
-      height: canvasHeight * scale,
+      width: visibleWorldWidth * scale,
+      height: visibleWorldHeight * scale,
     },
   };
 }

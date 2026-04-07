@@ -6,7 +6,7 @@ import {
 } from "react";
 import "./App.css";
 import appStyles from "./App.module.css";
-import { getVisibleNodeIds } from "./mindmap";
+import { getNodeHeightForLayout, getVisibleNodeIds } from "./mindmap";
 import {
   MINIMAP_HEIGHT,
   MINIMAP_WIDTH,
@@ -31,6 +31,7 @@ import type { Position } from "./features/editor/types";
 import { clamp } from "./features/editor/utils";
 import { CanvasStage } from "./features/editor/components/CanvasStage";
 import { CanvasBackgroundDialog } from "./features/editor/components/CanvasBackgroundDialog";
+import { CanvasViewportControls } from "./features/editor/components/CanvasViewportControls";
 import { DocumentStatus } from "./features/editor/components/DocumentStatus";
 import { InspectorDrawer } from "./features/editor/components/InspectorDrawer";
 import { MindMapTypeDialog } from "./features/editor/components/MindMapTypeDialog";
@@ -76,6 +77,7 @@ function App() {
     latestDocumentRef: canvasState.latestDocumentRef,
     mindMap: editor.mindMap,
     selectNode: editor.selectNode,
+    viewportScale: canvasState.camera.scale,
   });
   const reparentingState = useNodeReparenting({
     handleReparentNode: editor.handleReparentNode,
@@ -92,12 +94,17 @@ function App() {
       Object.entries(renderPositions).map(([nodeId, position]) => [
         nodeId,
         {
-          x: position.x - canvasState.camera.x,
-          y: position.y - canvasState.camera.y,
+          x: (position.x - canvasState.camera.x) * canvasState.camera.scale,
+          y: (position.y - canvasState.camera.y) * canvasState.camera.scale,
         },
       ]),
     ) as Record<string, Position>;
-  }, [canvasState.camera.x, canvasState.camera.y, renderPositions]);
+  }, [
+    canvasState.camera.scale,
+    canvasState.camera.x,
+    canvasState.camera.y,
+    renderPositions,
+  ]);
 
   const visibleNodeIds = useMemo(
     () => getVisibleNodeIds(editor.mindMap),
@@ -158,6 +165,38 @@ function App() {
       ),
     [editor.editorState.searchQuery, editor.mindMap],
   );
+  const visibleWorldBounds = useMemo(() => {
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    for (const nodeId of visibleNodeIds) {
+      const node = editor.mindMap.nodes[nodeId];
+      const position = renderPositions[nodeId];
+
+      if (!node || !position) {
+        continue;
+      }
+
+      const nodeHeight = getNodeHeightForLayout(editor.layoutType, node);
+      minX = Math.min(minX, position.x);
+      minY = Math.min(minY, position.y);
+      maxX = Math.max(maxX, position.x + NODE_WIDTH);
+      maxY = Math.max(maxY, position.y + nodeHeight);
+    }
+
+    if (
+      !Number.isFinite(minX) ||
+      !Number.isFinite(minY) ||
+      !Number.isFinite(maxX) ||
+      !Number.isFinite(maxY)
+    ) {
+      return null;
+    }
+
+    return { minX, minY, maxX, maxY };
+  }, [editor.layoutType, editor.mindMap, renderPositions, visibleNodeIds]);
   const connectors = useMemo(
     () =>
       buildConnectors(
@@ -166,9 +205,11 @@ function App() {
         visibleNodeIds,
         visibleNodeIdSet,
         stagePositions,
+        canvasState.camera.scale,
         nodeFocusStates,
       ),
     [
+      canvasState.camera.scale,
       editor.layoutType,
       editor.mindMap,
       nodeFocusStates,
@@ -192,9 +233,16 @@ function App() {
         editor.mindMap,
         editor.layoutType,
         stagePositions,
+        canvasState.camera.scale,
         reparentingState.reparenting,
       ),
-    [editor.layoutType, editor.mindMap, reparentingState.reparenting, stagePositions],
+    [
+      canvasState.camera.scale,
+      editor.layoutType,
+      editor.mindMap,
+      reparentingState.reparenting,
+      stagePositions,
+    ],
   );
   const minimap = useMemo(
     () =>
@@ -257,16 +305,17 @@ function App() {
         minimap.offsetY + minimap.contentHeight,
       );
 
-      canvasState.setCamera({
+      canvasState.setCamera((current) => ({
+        ...current,
         x:
           minimap.bounds.minX +
           (minimapX - minimap.offsetX) / minimap.scale -
-          canvasWidth / 2,
+          canvasWidth / (2 * current.scale),
         y:
           minimap.bounds.minY +
           (minimapY - minimap.offsetY) / minimap.scale -
-          canvasHeight / 2,
-      });
+          canvasHeight / (2 * current.scale),
+      }));
     },
     [canvasHeight, canvasState, canvasWidth, minimap],
   );
@@ -330,6 +379,24 @@ function App() {
     onUndo: editor.undo,
   });
   const shouldShowDocumentStatus = editor.fileState.lastError !== null;
+  const handleFitMap = useCallback(() => {
+    if (!visibleWorldBounds) {
+      return;
+    }
+
+    canvasState.fitToBounds(visibleWorldBounds);
+  }, [canvasState.fitToBounds, visibleWorldBounds]);
+  const handleCenterSelectedNode = useCallback(() => {
+    if (!editor.hasActiveSelection) {
+      return;
+    }
+
+    canvasState.centerOnNode(editor.selectedNodeId);
+  }, [
+    canvasState.centerOnNode,
+    editor.hasActiveSelection,
+    editor.selectedNodeId,
+  ]);
 
   useWindowTitle({
     currentDocumentTitle: editor.mindMap.title,
@@ -341,10 +408,14 @@ function App() {
 
   const totalNodes = Object.keys(editor.mindMap.nodes).length;
   const selectedNodePosition = stagePositions[editor.selectedNodeId];
+  const scaledNodeWidth = NODE_WIDTH * canvasState.camera.scale;
   const selectedNodeMenuLeft =
-    selectedNodePosition.x + NODE_WIDTH + NODE_CONTEXT_MENU_WIDTH + NODE_CONTEXT_MENU_GAP <
+    selectedNodePosition.x +
+      scaledNodeWidth +
+      NODE_CONTEXT_MENU_WIDTH +
+      NODE_CONTEXT_MENU_GAP <
     canvasWidth - 24
-      ? selectedNodePosition.x + NODE_WIDTH + NODE_CONTEXT_MENU_GAP
+      ? selectedNodePosition.x + scaledNodeWidth + NODE_CONTEXT_MENU_GAP
       : Math.max(
           selectedNodePosition.x - NODE_CONTEXT_MENU_WIDTH - NODE_CONTEXT_MENU_GAP,
           24,
@@ -384,6 +455,15 @@ function App() {
           onOpenLayoutDialog={editor.openLayoutDialog}
         />
       ) : null}
+
+      <CanvasViewportControls
+        canCenterSelected={editor.hasActiveSelection}
+        onCenterSelected={handleCenterSelectedNode}
+        onFitMap={handleFitMap}
+        onZoomIn={canvasState.zoomIn}
+        onZoomOut={canvasState.zoomOut}
+        zoomPercentage={Math.round(canvasState.camera.scale * 100)}
+      />
 
       <CanvasStage
         backgroundPresetId={editor.backgroundPresetId}

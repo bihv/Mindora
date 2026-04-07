@@ -22,6 +22,7 @@ export type DraggingState = {
   pointerOrigin: Position;
   originPositions: Record<string, Position>;
   delta: Position;
+  viewportScale: number;
 };
 
 export type NodeReparentingState = {
@@ -31,7 +32,9 @@ export type NodeReparentingState = {
   rootDirection: -1 | 1 | null;
 };
 
-export type CameraState = Position;
+export type CameraState = Position & {
+  scale: number;
+};
 
 export type PanningState = {
   pointerOrigin: Position;

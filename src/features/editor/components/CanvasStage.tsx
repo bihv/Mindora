@@ -378,6 +378,11 @@ export function CanvasStage({
         aria-hidden="true"
         className={styles.connections}
         height="100%"
+        style={
+          {
+            "--viewport-scale": camera.scale.toString(),
+          } as CSSProperties
+        }
         width="100%"
       >
         {connectors.map((connector) => (
@@ -428,6 +433,7 @@ export function CanvasStage({
               top: `${position.y}px`,
               height: `${nodeHeight}px`,
               minHeight: `${nodeHeight}px`,
+              "--node-scale": camera.scale.toString(),
               "--organic-accent": colorStyle.accent,
               "--organic-accent-strong": withAlpha(colorStyle.accent, 0.28),
               "--organic-accent-soft": withAlpha(colorStyle.accent, 0.16),
@@ -440,6 +446,7 @@ export function CanvasStage({
               top: `${position.y}px`,
               height: `${nodeHeight}px`,
               minHeight: `${nodeHeight}px`,
+              "--node-scale": camera.scale.toString(),
               background: colorStyle.surface,
               ...(isSelected
                 ? { boxShadow: `0 24px 54px ${colorStyle.glow}` }

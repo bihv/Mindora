@@ -8,12 +8,17 @@ import {
   type WheelEvent as ReactWheelEvent,
 } from "react";
 import {
+  CANVAS_SCALE_STEP,
+  FIT_MAP_PADDING,
+  MAX_CANVAS_SCALE,
+  MIN_CANVAS_SCALE,
   NODE_WIDTH,
 } from "../constants";
 import type {
   CameraState,
   Position,
 } from "../types";
+import { clamp } from "../utils";
 import {
   getMindMapLayoutType,
   getNodeHeightForLayout,
@@ -24,8 +29,15 @@ type UseCanvasStateArgs = {
   rootId: string;
 };
 
+type Bounds = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+};
+
 export function useCanvasState({ rootId }: UseCanvasStateArgs) {
-  const [camera, setCamera] = useState<CameraState>({ x: 0, y: 0 });
+  const [camera, setCamera] = useState<CameraState>({ x: 0, y: 0, scale: 1 });
   const [panning, setPanning] = useState<{
     pointerOrigin: Position;
     cameraOrigin: CameraState;
@@ -39,12 +51,18 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
     setViewportElement(node);
   }, []);
 
+  const getViewportDimensions = useCallback(() => {
+    return {
+      width: Math.max(viewportElement?.clientWidth ?? viewportSize.width, 0),
+      height: Math.max(viewportElement?.clientHeight ?? viewportSize.height, 0),
+    };
+  }, [viewportElement, viewportSize.height, viewportSize.width]);
+
   const centerOnNode = useCallback(
     (nodeId: string) => {
       const document = latestDocumentRef.current;
       const node = document?.nodes[nodeId];
-      const width = Math.max(viewportElement?.clientWidth ?? viewportSize.width, 0);
-      const height = Math.max(viewportElement?.clientHeight ?? viewportSize.height, 0);
+      const { width, height } = getViewportDimensions();
 
       if (!node || width <= 0 || height <= 0) {
         return false;
@@ -55,14 +73,87 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
         node,
       );
 
-      setCamera({
-        x: node.x - width / 2 + NODE_WIDTH / 2,
-        y: node.y - height / 2 + nodeHeight / 2,
+      setCamera((current) => ({
+        ...current,
+        x: node.x - width / (2 * current.scale) + NODE_WIDTH / 2,
+        y: node.y - height / (2 * current.scale) + nodeHeight / 2,
+      }));
+
+      return true;
+    },
+    [getViewportDimensions],
+  );
+
+  const zoomTo = useCallback(
+    (nextScale: number, anchor?: Position) => {
+      const { width, height } = getViewportDimensions();
+      if (width <= 0 || height <= 0) {
+        return false;
+      }
+
+      const clampedScale = clamp(nextScale, MIN_CANVAS_SCALE, MAX_CANVAS_SCALE);
+
+      setCamera((current) => {
+        const anchorX = anchor?.x ?? width / 2;
+        const anchorY = anchor?.y ?? height / 2;
+        const worldX = current.x + anchorX / current.scale;
+        const worldY = current.y + anchorY / current.scale;
+
+        return {
+          x: worldX - anchorX / clampedScale,
+          y: worldY - anchorY / clampedScale,
+          scale: clampedScale,
+        };
       });
 
       return true;
     },
-    [viewportElement, viewportSize.height, viewportSize.width],
+    [getViewportDimensions],
+  );
+
+  const zoomIn = useCallback(() => {
+    return zoomTo(camera.scale + CANVAS_SCALE_STEP);
+  }, [camera.scale, zoomTo]);
+
+  const zoomOut = useCallback(() => {
+    return zoomTo(camera.scale - CANVAS_SCALE_STEP);
+  }, [camera.scale, zoomTo]);
+
+  const fitToBounds = useCallback(
+    (bounds: Bounds, padding = FIT_MAP_PADDING) => {
+      const { width, height } = getViewportDimensions();
+      if (
+        width <= 0 ||
+        height <= 0 ||
+        !Number.isFinite(bounds.minX) ||
+        !Number.isFinite(bounds.minY) ||
+        !Number.isFinite(bounds.maxX) ||
+        !Number.isFinite(bounds.maxY)
+      ) {
+        return false;
+      }
+
+      const contentWidth = Math.max(bounds.maxX - bounds.minX, 1);
+      const contentHeight = Math.max(bounds.maxY - bounds.minY, 1);
+      const availableWidth = Math.max(width - padding * 2, 1);
+      const availableHeight = Math.max(height - padding * 2, 1);
+      const nextScale = clamp(
+        Math.min(availableWidth / contentWidth, availableHeight / contentHeight),
+        MIN_CANVAS_SCALE,
+        MAX_CANVAS_SCALE,
+      );
+      const centerX = (bounds.minX + bounds.maxX) / 2;
+      const centerY = (bounds.minY + bounds.maxY) / 2;
+
+      setCamera({
+        x: centerX - width / (2 * nextScale),
+        y: centerY - height / (2 * nextScale),
+        scale: nextScale,
+      });
+
+      return true;
+    },
+    [getViewportDimensions],
   );
 
   useEffect(() => {
@@ -122,8 +213,15 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
 
     const handlePointerMove = (event: PointerEvent) => {
       setCamera({
-        x: panning.cameraOrigin.x - (event.clientX - panning.pointerOrigin.x),
-        y: panning.cameraOrigin.y - (event.clientY - panning.pointerOrigin.y),
+        ...panning.cameraOrigin,
+        x:
+          panning.cameraOrigin.x -
+          (event.clientX - panning.pointerOrigin.x) /
+            panning.cameraOrigin.scale,
+        y:
+          panning.cameraOrigin.y -
+          (event.clientY - panning.pointerOrigin.y) /
+            panning.cameraOrigin.scale,
       });
     };
 
@@ -174,17 +272,32 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
       }
 
       event.preventDefault();
+      if (event.ctrlKey) {
+        const rect = viewportElement?.getBoundingClientRect();
+        if (!rect) {
+          return;
+        }
+
+        zoomTo(camera.scale * Math.exp(-event.deltaY * 0.0025), {
+          x: clamp(event.clientX - rect.left, 0, rect.width),
+          y: clamp(event.clientY - rect.top, 0, rect.height),
+        });
+        return;
+      }
+
       setCamera((current) => ({
-        x: current.x + event.deltaX,
-        y: current.y + event.deltaY,
+        ...current,
+        x: current.x + event.deltaX / current.scale,
+        y: current.y + event.deltaY / current.scale,
       }));
     },
-    [],
+    [camera.scale, viewportElement, zoomTo],
   );
 
   return {
     camera,
     centerOnNode,
+    fitToBounds,
     handleViewportWheel,
     latestDocumentRef,
     panning,
@@ -192,5 +305,8 @@ export function useCanvasState({ rootId }: UseCanvasStateArgs) {
     startPanning,
     viewportRef,
     viewportSize,
+    zoomIn,
+    zoomOut,
+    zoomTo,
   };
 }
