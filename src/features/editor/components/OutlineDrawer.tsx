@@ -8,9 +8,13 @@ import drawerStyles from "./EditorDrawer.module.css";
 import styles from "./OutlineDrawer.module.css";
 
 type OutlineDrawerProps = {
+  canCollapseAll: boolean;
+  canExpandAll: boolean;
   hasActiveSelection: boolean;
   isOpen: boolean;
   mindMap: MindMapDocument;
+  onCollapseAll: () => void;
+  onExpandAll: () => void;
   onSearchQueryChange: (value: string) => void;
   onSelectNode: (nodeId: string) => void;
   outlineSearchVisibleSet: Set<string> | null;
@@ -22,9 +26,13 @@ type OutlineDrawerProps = {
 };
 
 export function OutlineDrawer({
+  canCollapseAll,
+  canExpandAll,
   hasActiveSelection,
   isOpen,
   mindMap,
+  onCollapseAll,
+  onExpandAll,
   onSearchQueryChange,
   onSelectNode,
   outlineSearchVisibleSet,
@@ -105,6 +113,29 @@ export function OutlineDrawer({
           <span>
             {totalNodes} node{totalNodes === 1 ? "" : "s"}
           </span>
+        </div>
+
+        <div
+          aria-label="Outline actions"
+          className={styles.outlineActions}
+          role="toolbar"
+        >
+          <button
+            className={styles.outlineActionButton}
+            disabled={!canExpandAll}
+            onClick={onExpandAll}
+            type="button"
+          >
+            Expand all
+          </button>
+          <button
+            className={styles.outlineActionButton}
+            disabled={!canCollapseAll}
+            onClick={onCollapseAll}
+            type="button"
+          >
+            Collapse all
+          </button>
         </div>
 
         <label className={styles.searchField}>

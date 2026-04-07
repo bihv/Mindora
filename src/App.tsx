@@ -571,9 +571,13 @@ function App() {
       </CanvasStage>
 
       <OutlineDrawer
+        canCollapseAll={editor.canCollapseAll}
+        canExpandAll={editor.canExpandAll}
         hasActiveSelection={editor.hasActiveSelection}
         isOpen={editor.isOutlineOpen}
         mindMap={editor.mindMap}
+        onCollapseAll={editor.handleCollapseAll}
+        onExpandAll={editor.handleExpandAll}
         onSearchQueryChange={editor.setSearchQuery}
         onSelectNode={(nodeId) =>
           editor.selectNode(nodeId, { center: true, closeOutline: true })

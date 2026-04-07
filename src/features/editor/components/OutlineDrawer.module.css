@@ -2,6 +2,46 @@
   display: flex;
 }
 
+.outlineActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.outlineActionButton {
+  min-height: 34px;
+  flex: 1 1 120px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.outlineActionButton:hover:not(:disabled) {
+  border-color: var(--surface-border-strong);
+  background: rgba(136, 223, 203, 0.14);
+  transform: translateY(-1px);
+}
+
+.outlineActionButton:focus-visible {
+  outline: 2px solid rgba(136, 223, 203, 0.42);
+  outline-offset: 2px;
+}
+
+.outlineActionButton:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
 .outlineItemCount,
 .emptyState {
   color: var(--text-secondary);

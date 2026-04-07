@@ -88,6 +88,23 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const selectedNodeId = resolveSelectedNodeId(mindMap, editorState.selectedNodeId);
   const hasActiveSelection = editorState.hasActiveSelection;
   const selectedNode = mindMap.nodes[selectedNodeId];
+  const canExpandAll = useMemo(
+    () =>
+      Object.values(mindMap.nodes).some(
+        (node) => node.childrenIds.length > 0 && node.collapsed,
+      ),
+    [mindMap],
+  );
+  const canCollapseAll = useMemo(
+    () =>
+      Object.values(mindMap.nodes).some(
+        (node) =>
+          node.parentId !== null &&
+          node.childrenIds.length > 0 &&
+          !node.collapsed,
+      ),
+    [mindMap],
+  );
 
   const commitDocument = useCallback(
     (
@@ -549,6 +566,48 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     [commitDocument],
   );
 
+  const handleExpandAll = useCallback(() => {
+    if (!canExpandAll) {
+      return;
+    }
+
+    commitDocument((draft) => {
+      for (const node of Object.values(draft.nodes)) {
+        if (node.childrenIds.length === 0 || !node.collapsed) {
+          continue;
+        }
+
+        draft.nodes[node.id] = {
+          ...node,
+          collapsed: false,
+        };
+      }
+    });
+  }, [canExpandAll, commitDocument]);
+
+  const handleCollapseAll = useCallback(() => {
+    if (!canCollapseAll) {
+      return;
+    }
+
+    commitDocument((draft) => {
+      for (const node of Object.values(draft.nodes)) {
+        if (
+          node.parentId === null ||
+          node.childrenIds.length === 0 ||
+          node.collapsed
+        ) {
+          continue;
+        }
+
+        draft.nodes[node.id] = {
+          ...node,
+          collapsed: true,
+        };
+      }
+    });
+  }, [canCollapseAll, commitDocument]);
+
   const replaceDocument = useCallback(
     (
       document: MindMapDocument,
@@ -815,6 +874,8 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
 
   return useMemo(
     () => ({
+      canCollapseAll,
+      canExpandAll,
       clearSelection,
       closeBackgroundDialog,
       closeNodeMenu,
@@ -826,9 +887,11 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleAddSibling,
       handleAutoLayout,
       handleBackgroundPresetChange,
+      handleCollapseAll,
       handleCreateNewMindMap,
       handleDeleteSelected,
       handleDuplicateSelected,
+      handleExpandAll,
       handleExportFile,
       handleLayoutTypeChange,
       handleNodeColorChange,
@@ -869,6 +932,8 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       undo,
     }),
     [
+      canCollapseAll,
+      canExpandAll,
       clearSelection,
       closeBackgroundDialog,
       closeNodeMenu,
@@ -880,9 +945,11 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleAddSibling,
       handleAutoLayout,
       handleBackgroundPresetChange,
+      handleCollapseAll,
       handleCreateNewMindMap,
       handleDeleteSelected,
       handleDuplicateSelected,
+      handleExpandAll,
       handleExportFile,
       handleLayoutTypeChange,
       handleNodeColorChange,
