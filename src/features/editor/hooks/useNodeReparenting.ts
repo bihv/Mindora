@@ -4,7 +4,9 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { canReparentNode, getSubtreeIds, type MindMapDocument } from "../../../mindmap";
+import { canReparentNode } from "../../../domain/mindmap/reparenting";
+import { getSubtreeIds } from "../../../domain/mindmap/treeQueries";
+import type { MindMapDocument } from "../../../domain/mindmap/model";
 import type { NodeReparentingState, SelectNodeOptions } from "../types";
 
 type ActiveNodeReparentingState = NodeReparentingState & {

@@ -8,9 +8,9 @@ import {
 import {
   getBranchDirection,
   getSubtreeIds,
-  updateNodePosition,
-  type MindMapDocument,
-} from "../../../mindmap";
+} from "../../../domain/mindmap/treeQueries";
+import { updateNodePosition } from "../../../domain/mindmap/nodeMutations";
+import type { MindMapDocument } from "../../../domain/mindmap/model";
 import { MIN_BRANCH_GAP, NODE_WIDTH } from "../constants";
 import type { DraggingState, Position, SelectNodeOptions } from "../types";
 

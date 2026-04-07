@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import {
-  NODE_COLORS,
   getMindMapNodeDisplayTitle,
-  type MindMapDocument,
-} from "../../../mindmap";
+} from "../../../domain/mindmap/nodeContent";
+import { NODE_COLORS } from "../../../domain/mindmap/model";
+import type { MindMapDocument } from "../../../domain/mindmap/model";
 import drawerStyles from "./EditorDrawer.module.css";
 import styles from "./OutlineDrawer.module.css";
 

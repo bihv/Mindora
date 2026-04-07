@@ -1,0 +1,90 @@
+.canvasStage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: none;
+  border-radius: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(9, 15, 26, 0.98), rgba(6, 11, 20, 0.98));
+  background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+
+.canvasStagePanning {
+  cursor: grabbing;
+}
+
+.connections {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.connectionsPath {
+  fill: none;
+  stroke-width: calc(3px * var(--viewport-scale, 1));
+  stroke-linecap: round;
+  opacity: 0.72;
+  transition:
+    opacity 180ms ease,
+    stroke-width 180ms ease,
+    filter 180ms ease;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.06));
+}
+
+.connectionsPathLineage {
+  opacity: 0.92;
+  stroke-width: calc(3.4px * var(--viewport-scale, 1));
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.12));
+}
+
+.connectionsPathDescendant {
+  opacity: 0.38;
+  stroke-width: calc(2.8px * var(--viewport-scale, 1));
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.04));
+}
+
+.connectionsPathDimmed {
+  opacity: 0.12;
+  stroke-width: calc(2.4px * var(--viewport-scale, 1));
+  filter: none;
+}
+
+.connectionsPathPreview {
+  opacity: 0.92;
+  stroke-width: calc(3.8px * var(--viewport-scale, 1));
+  stroke-dasharray: 9 7;
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.18));
+}
+
+.connectionsPathPreviewSnapped {
+  opacity: 1;
+  stroke-width: calc(4.2px * var(--viewport-scale, 1));
+  stroke-dasharray: none;
+}
+
+.canvasStageOrganic .connectionsPath {
+  stroke-width: calc(3.4px * var(--viewport-scale, 1));
+  opacity: 0.88;
+  filter: none;
+}
+
+.canvasStageOrganic .connectionsPathLineage {
+  stroke-width: calc(4px * var(--viewport-scale, 1));
+}
+
+.canvasStageOrganic .connectionsPathDescendant {
+  opacity: 0.5;
+}
+
+.canvasStageOrganic .connectionsPathDimmed {
+  opacity: 0.18;
+  stroke-width: 2.8;
+}

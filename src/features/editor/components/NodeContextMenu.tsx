@@ -1,4 +1,4 @@
-import type { MindMapNode } from "../../../mindmap";
+import type { MindMapNode } from "../../../domain/mindmap/model";
 import styles from "./NodeContextMenu.module.css";
 
 type NodeContextMenuProps = {

@@ -1,5 +1,5 @@
-import type { StoredMindMapDraft } from "../../../mindmap";
-import type { RecentMindMapFile } from "../filePersistence";
+import type { StoredMindMapDraft } from "../../../domain/mindmap/model";
+import type { RecentMindMapFile } from "../../../platform/files/types";
 import styles from "./RecentFilesLauncher.module.css";
 
 type RecentFilesLauncherProps = {

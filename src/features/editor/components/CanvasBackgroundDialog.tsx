@@ -1,11 +1,10 @@
 import { useEffect, useId } from "react";
-import {
-  MINDMAP_BACKGROUND_PRESETS,
-  getBackgroundPreviewStyle,
-  type MindMapBackgroundPresetId,
-} from "../backgroundPresets";
+import { MINDMAP_BACKGROUND_PRESETS } from "../../../domain/mindmap/backgroundPresets/presetCatalog";
+import type { MindMapBackgroundPresetId } from "../../../domain/mindmap/backgroundPresets/presetCatalog";
+import { getBackgroundPreviewStyle } from "../../../domain/mindmap/backgroundPresets/canvasBackgroundStyle";
 import drawerStyles from "./EditorDrawer.module.css";
-import styles from "./MindMapTypeDialog.module.css";
+import backgroundStyles from "./CanvasBackgroundCard.module.css";
+import panelStyles from "./MindMapDialogPanel.module.css";
 
 type CanvasBackgroundDialogProps = {
   currentBackgroundPresetId: MindMapBackgroundPresetId;
@@ -66,21 +65,25 @@ export function CanvasBackgroundDialog({
         aria-labelledby={titleId}
         className={[
           drawerStyles.floatingPanel,
-          styles.layoutPanel,
-          styles.backgroundPanel,
+          panelStyles.layoutPanel,
+          panelStyles.backgroundPanel,
         ].join(" ")}
         role="region"
       >
-        <header className={styles.layoutPanelHeader}>
-          <div className={[styles.header, styles.backgroundPanelHeader].join(" ")}>
-            <span className={styles.eyebrow} id={titleId}>
+        <header className={panelStyles.layoutPanelHeader}>
+          <div
+            className={[panelStyles.header, panelStyles.backgroundPanelHeader].join(
+              " ",
+            )}
+          >
+            <span className={panelStyles.eyebrow} id={titleId}>
               Canvas Background
             </span>
           </div>
 
           <button
             aria-label="Close background panel"
-            className={styles.panelCloseButton}
+            className={panelStyles.panelCloseButton}
             onClick={onClose}
             type="button"
           >
@@ -88,9 +91,9 @@ export function CanvasBackgroundDialog({
           </button>
         </header>
 
-        <div className={styles.layoutPanelActions}>
+        <div className={panelStyles.layoutPanelActions}>
           <button
-            className={styles.secondaryButton}
+            className={panelStyles.secondaryButton}
             disabled={!canReset}
             onClick={onReset}
             type="button"
@@ -99,15 +102,18 @@ export function CanvasBackgroundDialog({
           </button>
         </div>
 
-        <div className={styles.backgroundPanelBody}>
-          <section className={styles.groupSection}>
-            <div className={styles.groupHeader}>
-              <span aria-hidden="true" className={styles.groupCaret} />
+        <div className={panelStyles.backgroundPanelBody}>
+          <section className={panelStyles.groupSection}>
+            <div className={panelStyles.groupHeader}>
+              <span aria-hidden="true" className={panelStyles.groupCaret} />
               <h3>Background Presets</h3>
             </div>
 
             <div
-              className={[styles.backgroundGrid, styles.backgroundGridPanel].join(" ")}
+              className={[
+                backgroundStyles.backgroundGrid,
+                backgroundStyles.backgroundGridPanel,
+              ].join(" ")}
             >
               {MINDMAP_BACKGROUND_PRESETS.map((background) => {
                 const isSelected = currentBackgroundPresetId === background.id;
@@ -117,9 +123,9 @@ export function CanvasBackgroundDialog({
                     aria-label={`Canvas background ${background.label}`}
                     aria-pressed={isSelected}
                     className={[
-                      styles.backgroundCard,
-                      styles.backgroundCardPanel,
-                      isSelected ? styles.backgroundCardSelected : "",
+                      backgroundStyles.backgroundCard,
+                      backgroundStyles.backgroundCardPanel,
+                      isSelected ? backgroundStyles.backgroundCardSelected : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}
@@ -129,11 +135,11 @@ export function CanvasBackgroundDialog({
                   >
                     <span
                       aria-hidden="true"
-                      className={styles.backgroundPreview}
+                      className={backgroundStyles.backgroundPreview}
                       style={getBackgroundPreviewStyle(background.id)}
                     />
 
-                    <span className={styles.backgroundMeta}>
+                    <span className={backgroundStyles.backgroundMeta}>
                       <strong>{background.label}</strong>
                       <span>{background.description}</span>
                     </span>

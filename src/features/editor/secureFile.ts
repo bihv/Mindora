@@ -1,8 +1,8 @@
 import {
   hydrateMindMapDocument,
   isMindMapDocument,
-  type MindMapDocument,
-} from "../../mindmap";
+} from "../../domain/mindmap/documents";
+import type { MindMapDocument } from "../../domain/mindmap/model";
 
 type SecureMindMapEnvelope = {
   algorithm: "AES-GCM";

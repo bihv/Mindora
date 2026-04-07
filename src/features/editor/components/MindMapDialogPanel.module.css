@@ -1,0 +1,196 @@
+.layoutPanel {
+  width: 364px;
+  max-width: min(364px, calc(100vw - 52px));
+  gap: 14px;
+}
+
+.backgroundPanel {
+  width: 468px;
+  max-width: min(468px, calc(100vw - 52px));
+  max-height: calc(
+    100vh - var(--inspector-top-space, 22px) - var(--inspector-bottom-space, 22px)
+  );
+  gap: 16px;
+  overflow: hidden;
+}
+
+.backgroundPanelBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-right: -4px;
+}
+
+.layoutPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.backgroundPanelHeader {
+  max-width: none;
+}
+
+.panelCloseButton {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.panelCloseButton:hover {
+  border-color: var(--surface-border-strong);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.panelCloseButton:focus-visible,
+.secondaryButton:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.34);
+  outline-offset: 3px;
+}
+
+.layoutPanelActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.layoutPanelActions .secondaryButton {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+}
+
+.header {
+  max-width: 58ch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eyebrow {
+  color: rgba(194, 219, 255, 0.92);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.groupList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.groupSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.groupCaret {
+  width: 0;
+  height: 0;
+  border-right: 7px solid transparent;
+  border-top: 10px solid rgba(255, 255, 255, 0.9);
+  border-left: 7px solid transparent;
+  transform: translateY(1px);
+}
+
+.groupHeader h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.04rem;
+  letter-spacing: -0.03em;
+}
+
+.groupGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 260px));
+  gap: 16px;
+  justify-content: flex-start;
+}
+
+.groupGridPanel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.secondaryButton {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: 600;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.secondaryButton:hover {
+  border-color: var(--surface-border-strong);
+  transform: translateY(-1px);
+}
+
+.secondaryButton:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 840px) {
+  .layoutPanel {
+    width: 100%;
+    max-width: none;
+  }
+
+  .backgroundPanel {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .groupGridPanel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .layoutPanelHeader {
+    gap: 10px;
+  }
+
+  .layoutPanelActions .secondaryButton {
+    align-self: flex-start;
+  }
+}

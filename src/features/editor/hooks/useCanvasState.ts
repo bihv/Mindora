@@ -18,12 +18,12 @@ import type {
   CameraState,
   Position,
 } from "../types";
-import { clamp } from "../utils";
+import { clamp } from "../../../shared/math";
 import {
   getMindMapLayoutType,
-  getNodeHeightForLayout,
-  type MindMapDocument,
-} from "../../../mindmap";
+} from "../../../domain/mindmap/documents";
+import { getNodeHeightForLayout } from "../../../domain/mindmap/layout";
+import type { MindMapDocument } from "../../../domain/mindmap/model";
 
 type UseCanvasStateArgs = {
   rootId: string;

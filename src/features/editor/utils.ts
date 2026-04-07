@@ -1,10 +1,6 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 export function isEditableTarget(target: HTMLElement): boolean {
   return (
     target.tagName === "INPUT" ||

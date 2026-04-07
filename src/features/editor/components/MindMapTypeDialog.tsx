@@ -4,14 +4,15 @@ import {
   LOGIC_CHART_LINE_LAYOUT,
   MINDMAP_CARD_LAYOUT,
   MINDMAP_LINE_LAYOUT,
-  type MindMapLayoutType,
-} from "../../../mindmap";
+} from "../../../domain/mindmap/model";
+import type { MindMapLayoutType } from "../../../domain/mindmap/model";
 import mindMapPreviewAsset from "../../../assets/mindmap-type-classic.svg?raw";
 import mindMapLinePreviewAsset from "../../../assets/mindmap-type-line.svg?raw";
 import logicChartCardPreviewAsset from "../../../assets/mindmap-type-logic-chart-card.svg?raw";
 import logicChartPreviewAsset from "../../../assets/mindmap-type-logic-chart.svg?raw";
 import drawerStyles from "./EditorDrawer.module.css";
-import styles from "./MindMapTypeDialog.module.css";
+import panelStyles from "./MindMapDialogPanel.module.css";
+import optionStyles from "./MindMapTypeOptionCard.module.css";
 
 type PreviewTheme = "light" | "dark";
 
@@ -163,19 +164,19 @@ export function MindMapTypeDialog({
     >
       <section
         aria-labelledby={titleId}
-        className={[drawerStyles.floatingPanel, styles.layoutPanel].join(" ")}
+        className={[drawerStyles.floatingPanel, panelStyles.layoutPanel].join(" ")}
         role="region"
       >
-        <header className={styles.layoutPanelHeader}>
-          <div className={styles.header}>
-            <span className={styles.eyebrow} id={titleId}>
+        <header className={panelStyles.layoutPanelHeader}>
+          <div className={panelStyles.header}>
+            <span className={panelStyles.eyebrow} id={titleId}>
               Layout Type
             </span>
           </div>
 
           <button
             aria-label="Close layout panel"
-            className={styles.panelCloseButton}
+            className={panelStyles.panelCloseButton}
             onClick={onClose}
             type="button"
           >
@@ -183,9 +184,9 @@ export function MindMapTypeDialog({
           </button>
         </header>
 
-        <div className={styles.layoutPanelActions}>
+        <div className={panelStyles.layoutPanelActions}>
           <button
-            className={styles.secondaryButton}
+            className={panelStyles.secondaryButton}
             disabled={!canReset}
             onClick={onReset}
             type="button"
@@ -194,15 +195,19 @@ export function MindMapTypeDialog({
           </button>
         </div>
 
-        <div className={styles.groupList}>
+        <div className={panelStyles.groupList}>
           {GROUPED_MINDMAP_TYPE_OPTIONS.map((group) => (
-            <section className={styles.groupSection} key={group.id}>
-              <div className={styles.groupHeader}>
-                <span aria-hidden="true" className={styles.groupCaret} />
+            <section className={panelStyles.groupSection} key={group.id}>
+              <div className={panelStyles.groupHeader}>
+                <span aria-hidden="true" className={panelStyles.groupCaret} />
                 <h3>{group.title}</h3>
               </div>
 
-              <div className={[styles.groupGrid, styles.groupGridPanel].join(" ")}>
+              <div
+                className={[panelStyles.groupGrid, panelStyles.groupGridPanel].join(
+                  " ",
+                )}
+              >
                 {group.options.map((option) => {
                   const isSelected = currentLayoutType === option.id;
 
@@ -211,12 +216,12 @@ export function MindMapTypeDialog({
                       aria-label={option.ariaLabel}
                       aria-pressed={isSelected}
                       className={[
-                        styles.optionCard,
-                        styles.optionCardPanel,
+                        optionStyles.optionCard,
+                        optionStyles.optionCardPanel,
                         option.groupId === "mindmap"
-                          ? styles.optionCardMindMap
-                          : styles.optionCardLogicChart,
-                        isSelected ? styles.optionCardSelected : "",
+                          ? optionStyles.optionCardMindMap
+                          : optionStyles.optionCardLogicChart,
+                        isSelected ? optionStyles.optionCardSelected : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
@@ -226,13 +231,13 @@ export function MindMapTypeDialog({
                     >
                       <div
                         className={[
-                          styles.previewFrame,
+                          optionStyles.previewFrame,
                           previewTheme === "dark"
-                            ? styles.previewFrameDark
-                            : styles.previewFrameLight,
+                            ? optionStyles.previewFrameDark
+                            : optionStyles.previewFrameLight,
                           option.groupId === "mindmap"
-                            ? styles.previewFrameMindMap
-                            : styles.previewFrameLogicChart,
+                            ? optionStyles.previewFrameMindMap
+                            : optionStyles.previewFrameLogicChart,
                         ].join(" ")}
                       >
                         <MindMapTypeIllustration
@@ -241,7 +246,7 @@ export function MindMapTypeDialog({
                         />
                       </div>
 
-                      <span className={styles.optionMeta}>
+                      <span className={optionStyles.optionMeta}>
                         <strong>{option.label}</strong>
                         <span>{option.description}</span>
                       </span>
@@ -270,8 +275,10 @@ function MindMapTypeIllustration({
     <span
       aria-hidden="true"
       className={[
-        styles.previewSvg,
-        theme === "dark" ? styles.previewSvgDark : styles.previewSvgLight,
+        optionStyles.previewSvg,
+        theme === "dark"
+          ? optionStyles.previewSvgDark
+          : optionStyles.previewSvgLight,
       ].join(" ")}
       dangerouslySetInnerHTML={{ __html: markup }}
     />

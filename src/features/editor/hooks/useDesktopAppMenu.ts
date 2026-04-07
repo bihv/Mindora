@@ -7,7 +7,7 @@ import {
   PredefinedMenuItem,
   Submenu,
 } from "@tauri-apps/api/menu";
-import type { ExportFormat } from "../exportTypes";
+import type { ExportFormat } from "../../export";
 
 type UseDesktopAppMenuArgs = {
   canDuplicateNode: boolean;
@@ -80,15 +80,7 @@ export function useDesktopAppMenu(args: UseDesktopAppMenuArgs): boolean {
     void registry.menuPromise
       .then((menu) => syncDesktopAppMenu(menu, registry.latestArgs ?? args))
       .catch(logDesktopMenuError);
-  }, [
-    args.canDuplicateNode,
-    args.canRedo,
-    args.canUndo,
-    args.currentFileName,
-    args.isFileActionPending,
-    args.isOutlineOpen,
-    desktopMenuEnabled,
-  ]);
+  }, [args, desktopMenuEnabled]);
 
   return desktopMenuEnabled;
 }

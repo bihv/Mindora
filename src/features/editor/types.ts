@@ -1,23 +1,42 @@
+import type { MindMapBackgroundPresetId } from "../../domain/mindmap/backgroundPresets/presetCatalog";
 import type {
   MindMapDocument,
+  MindMapLayoutType,
   MindMapNode,
   StoredMindMapDraft,
-} from "../../mindmap";
-import type { MindMapFileHandle, RecentMindMapFile } from "./filePersistence";
+} from "../../domain/mindmap/model";
+import type {
+  MindMapFileHandle,
+  RecentMindMapFile,
+} from "../../platform/files/types";
 
 export type Position = {
   x: number;
   y: number;
 };
 
-export type EditorState = {
+export type EditorDocumentState = {
   history: MindMapDocument[];
   historyIndex: number;
   selectedNodeId: string;
   hasActiveSelection: boolean;
   isNodeMenuOpen: boolean;
+};
+
+export type EditorWorkspaceState = {
   searchQuery: string;
   activeTemplateId: string;
+};
+
+export type EditorState = EditorDocumentState & EditorWorkspaceState;
+
+export type EditorChromeState = {
+  isOutlineOpen: boolean;
+  isInspectorOpen: boolean;
+  isLayoutDialogOpen: boolean;
+  layoutPanelInitialLayoutType: MindMapLayoutType | null;
+  backgroundPanelInitialPresetId: MindMapBackgroundPresetId | null;
+  isBackgroundDialogOpen: boolean;
 };
 
 export type DraggingState = {
