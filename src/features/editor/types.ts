@@ -1,4 +1,8 @@
-import type { MindMapDocument, MindMapNode } from "../../mindmap";
+import type {
+  MindMapDocument,
+  MindMapNode,
+  StoredMindMapDraft,
+} from "../../mindmap";
 import type { MindMapFileHandle, RecentMindMapFile } from "./filePersistence";
 
 export type Position = {
@@ -104,9 +108,11 @@ export type SearchMatch = MindMapNode;
 export type EditorFileState = {
   currentFileHandle: MindMapFileHandle | null;
   currentFileName: string | null;
+  draftBaselineSnapshot: string | null;
   isPending: boolean;
   isStartupScreenVisible: boolean;
   lastError: string | null;
   lastSavedSnapshot: string | null;
   recentFiles: RecentMindMapFile[];
+  recoverableDraft: StoredMindMapDraft | null;
 };

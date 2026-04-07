@@ -73,6 +73,15 @@ export type MindMapTemplate = {
   create: () => MindMapDocument;
 };
 
+export type StoredMindMapDraft = {
+  document: MindMapDocument;
+  draftBaselineSnapshot: string | null;
+  fileHandlePath: string | null;
+  fileName: string | null;
+  lastSavedSnapshot: string | null;
+  updatedAt: number | null;
+};
+
 export const STORAGE_KEY = "mindora:mvp-document";
 export const TEMPLATE_KEY = "mindora:active-template";
 export const DEFAULT_MINDMAP_LAYOUT_TYPE: MindMapLayoutType = MINDMAP_CARD_LAYOUT;
@@ -914,16 +923,31 @@ export function resolveSelectedNodeId(
   return document.rootId;
 }
 
-export function loadStoredMindMap(): MindMapDocument | null {
+export function loadStoredMindMapDraft(): StoredMindMapDraft | null {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
     return null;
   }
 
   try {
-    const parsed = JSON.parse(raw) as MindMapDocument;
+    const parsed = JSON.parse(raw) as unknown;
+    if (isStoredMindMapDraft(parsed)) {
+      return {
+        ...parsed,
+        document: hydrateMindMapDocument(parsed.document),
+      };
+    }
+
     if (isMindMapDocument(parsed)) {
-      return hydrateMindMapDocument(parsed);
+      const document = hydrateMindMapDocument(parsed);
+      return {
+        document,
+        draftBaselineSnapshot: serializeStoredMindMapDocument(document),
+        fileHandlePath: null,
+        fileName: null,
+        lastSavedSnapshot: null,
+        updatedAt: null,
+      };
     }
   } catch {
     return null;
@@ -932,11 +956,35 @@ export function loadStoredMindMap(): MindMapDocument | null {
   return null;
 }
 
-export function saveMindMap(document: MindMapDocument): void {
+export function saveMindMapDraft(draft: StoredMindMapDraft): void {
+  const normalizedDraft: StoredMindMapDraft = {
+    ...draft,
+    document: hydrateMindMapDocument(draft.document),
+  };
+
   localStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify(hydrateMindMapDocument(document)),
+    JSON.stringify(normalizedDraft),
   );
+}
+
+export function clearStoredMindMapDraft(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+export function loadStoredMindMap(): MindMapDocument | null {
+  return loadStoredMindMapDraft()?.document ?? null;
+}
+
+export function saveMindMap(document: MindMapDocument): void {
+  saveMindMapDraft({
+    document,
+    draftBaselineSnapshot: serializeStoredMindMapDocument(document),
+    fileHandlePath: null,
+    fileName: null,
+    lastSavedSnapshot: null,
+    updatedAt: Date.now(),
+  });
 }
 
 export function loadStoredTemplateId(): string | null {
@@ -976,6 +1024,29 @@ function isMindMapLayoutType(value: unknown): value is MindMapLayoutType {
     typeof value === "string" &&
     MINDMAP_LAYOUT_TYPES.includes(value as MindMapLayoutType)
   );
+}
+
+function isStoredMindMapDraft(value: unknown): value is StoredMindMapDraft {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const draft = value as Partial<StoredMindMapDraft>;
+
+  return (
+    isMindMapDocument(draft.document) &&
+    (draft.draftBaselineSnapshot === null ||
+      typeof draft.draftBaselineSnapshot === "string") &&
+    (draft.fileHandlePath === null || typeof draft.fileHandlePath === "string") &&
+    (draft.fileName === null || typeof draft.fileName === "string") &&
+    (draft.lastSavedSnapshot === null ||
+      typeof draft.lastSavedSnapshot === "string") &&
+    (draft.updatedAt === null || typeof draft.updatedAt === "number")
+  );
+}
+
+function serializeStoredMindMapDocument(document: MindMapDocument): string {
+  return JSON.stringify(hydrateMindMapDocument(document), null, 2);
 }
 
 function isMindMapNodeKind(value: unknown): value is MindMapNodeKind {

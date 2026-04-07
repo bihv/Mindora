@@ -475,13 +475,16 @@ function App() {
         isFileActionPending={editor.fileState.isPending}
         lastFileActionError={editor.fileState.lastError}
         onCreateMindMap={editor.handleCreateNewMindMap}
+        onDiscardStoredDraft={editor.handleDiscardStoredDraft}
         onOpenFile={() => {
           void editor.handleOpenFile();
         }}
         onOpenRecentFile={(path) => {
           void editor.handleOpenRecentFile(path);
         }}
+        onRecoverStoredDraft={editor.handleRecoverStoredDraft}
         recentFiles={editor.fileState.recentFiles}
+        recoverableDraft={editor.fileState.recoverableDraft}
       />
     );
   }

@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MindMapBackgroundPresetId } from "../backgroundPresets";
 import {
+  clearStoredMindMapDraft,
   canReparentNode,
   cloneMindMapDocument,
   createBlankMindMap,
@@ -12,8 +13,10 @@ import {
   getMindMapLayoutType,
   isClassicMindMapLayoutType,
   isLogicChartLayoutType,
+  loadStoredMindMapDraft,
   resolveSelectedNodeId,
   reparentNode,
+  saveMindMapDraft,
   setMindMapBackgroundPresetId,
   setMindMapLayoutType,
   setMindMapNodeKind,
@@ -23,6 +26,7 @@ import {
   type MindMapLayoutType,
   type MindMapNodeKind,
   type NodeColor,
+  type StoredMindMapDraft,
 } from "../../../mindmap";
 import { HISTORY_LIMIT } from "../constants";
 import {
@@ -51,6 +55,7 @@ function createDefaultMindMapDocument(): MindMapDocument {
 }
 
 export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
+  const hasStoredDraftForCurrentSessionRef = useRef(false);
   const [editorState, setEditorState] = useState<EditorState>(() => {
     const initialDocument = createDefaultMindMapDocument();
 
@@ -67,11 +72,13 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const [fileState, setFileState] = useState<EditorFileState>({
     currentFileHandle: null,
     currentFileName: null,
+    draftBaselineSnapshot: null,
     isPending: false,
     isStartupScreenVisible: true,
     lastError: null,
     lastSavedSnapshot: null,
     recentFiles: loadRecentMindMapFiles(),
+    recoverableDraft: loadStoredMindMapDraft(),
   });
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
@@ -83,6 +90,10 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const [isBackgroundDialogOpen, setIsBackgroundDialogOpen] = useState(false);
 
   const mindMap = editorState.history[editorState.historyIndex];
+  const currentSnapshot = useMemo(
+    () => serializeMindMapDocument(mindMap),
+    [mindMap],
+  );
   const backgroundPresetId = getMindMapBackgroundPresetId(mindMap);
   const layoutType = getMindMapLayoutType(mindMap);
   const selectedNodeId = resolveSelectedNodeId(mindMap, editorState.selectedNodeId);
@@ -612,13 +623,19 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     (
       document: MindMapDocument,
       options?: {
+        draftBaselineSnapshot?: string | null;
         fileHandle?: EditorFileState["currentFileHandle"];
         fileName?: string | null;
         lastSavedSnapshot?: string | null;
+        markStoredDraftAsCurrentSession?: boolean;
         recentFiles?: EditorFileState["recentFiles"];
+        recoverableDraft?: StoredMindMapDraft | null;
       },
     ) => {
+      const fallbackSnapshot = serializeMindMapDocument(document);
       const nextSelectedNodeId = resolveSelectedNodeId(document, document.rootId);
+      hasStoredDraftForCurrentSessionRef.current =
+        options?.markStoredDraftAsCurrentSession ?? false;
 
       setEditorState((current) => ({
         ...current,
@@ -634,11 +651,17 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
         ...current,
         currentFileHandle: options?.fileHandle ?? null,
         currentFileName: options?.fileName ?? null,
+        draftBaselineSnapshot:
+          options?.draftBaselineSnapshot ?? fallbackSnapshot,
         isPending: false,
         isStartupScreenVisible: false,
         lastError: null,
         lastSavedSnapshot: options?.lastSavedSnapshot ?? null,
         recentFiles: options?.recentFiles ?? current.recentFiles,
+        recoverableDraft:
+          options?.recoverableDraft === undefined
+            ? current.recoverableDraft
+            : options.recoverableDraft,
       }));
       setIsOutlineOpen(false);
       setIsInspectorOpen(false);
@@ -674,6 +697,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       replaceDocument(result.document, {
         fileHandle: result.fileHandle,
         fileName: result.fileName,
+        draftBaselineSnapshot: result.contents,
         lastSavedSnapshot: result.contents,
         recentFiles: loadRecentMindMapFiles(),
       });
@@ -700,6 +724,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
         replaceDocument(result.document, {
           fileHandle: result.fileHandle,
           fileName: result.fileName,
+          draftBaselineSnapshot: result.contents,
           lastSavedSnapshot: result.contents,
           recentFiles: loadRecentMindMapFiles(),
         });
@@ -718,6 +743,44 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
   const handleCreateNewMindMap = useCallback(() => {
     replaceDocument(createDefaultMindMapDocument());
   }, [replaceDocument]);
+
+  const handleRecoverStoredDraft = useCallback(() => {
+    const recoverableDraft = fileState.recoverableDraft;
+    if (!recoverableDraft) {
+      return;
+    }
+
+    const fileHandlePath =
+      typeof recoverableDraft.fileHandlePath === "string" &&
+      recoverableDraft.fileHandlePath.trim()
+        ? recoverableDraft.fileHandlePath
+        : null;
+    const isLegacyDraft = recoverableDraft.updatedAt === null;
+
+    replaceDocument(recoverableDraft.document, {
+      draftBaselineSnapshot:
+        recoverableDraft.draftBaselineSnapshot ??
+        serializeMindMapDocument(recoverableDraft.document),
+      fileHandle: fileHandlePath,
+      fileName: fileHandlePath ? recoverableDraft.fileName : null,
+      lastSavedSnapshot: recoverableDraft.lastSavedSnapshot,
+      markStoredDraftAsCurrentSession: !isLegacyDraft,
+      recoverableDraft,
+    });
+  }, [fileState.recoverableDraft, replaceDocument]);
+
+  const handleDiscardStoredDraft = useCallback(() => {
+    clearStoredMindMapDraft();
+    hasStoredDraftForCurrentSessionRef.current = false;
+    setFileState((current) =>
+      current.recoverableDraft === null
+        ? current
+        : {
+            ...current,
+            recoverableDraft: null,
+          },
+    );
+  }, []);
 
   const handleSaveFile = useCallback(async () => {
     setFileState((current) => ({
@@ -739,15 +802,24 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
         return;
       }
 
+      const shouldClearCurrentDraft = hasStoredDraftForCurrentSessionRef.current;
+      if (shouldClearCurrentDraft) {
+        clearStoredMindMapDraft();
+      }
+      hasStoredDraftForCurrentSessionRef.current = false;
       setFileState((current) => ({
         ...current,
         currentFileHandle: result.fileHandle,
         currentFileName: result.fileName,
+        draftBaselineSnapshot: result.contents,
         isPending: false,
         isStartupScreenVisible: false,
         lastError: null,
         lastSavedSnapshot: result.contents,
         recentFiles: loadRecentMindMapFiles(),
+        recoverableDraft: shouldClearCurrentDraft
+          ? null
+          : current.recoverableDraft,
       }));
     } catch (error) {
       setFileState((current) => ({
@@ -864,13 +936,75 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     handleBackgroundPresetChange,
   ]);
 
+  useEffect(() => {
+    if (
+      fileState.isStartupScreenVisible ||
+      fileState.isPending ||
+      fileState.draftBaselineSnapshot === null
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (currentSnapshot === fileState.draftBaselineSnapshot) {
+        if (!hasStoredDraftForCurrentSessionRef.current) {
+          return;
+        }
+
+        clearStoredMindMapDraft();
+        hasStoredDraftForCurrentSessionRef.current = false;
+        setFileState((current) =>
+          current.recoverableDraft === null
+            ? current
+            : {
+                ...current,
+                recoverableDraft: null,
+              },
+        );
+        return;
+      }
+
+      const nextRecoverableDraft: StoredMindMapDraft = {
+        document: mindMap,
+        draftBaselineSnapshot: fileState.draftBaselineSnapshot,
+        fileHandlePath:
+          typeof fileState.currentFileHandle === "string"
+            ? fileState.currentFileHandle
+            : null,
+        fileName: fileState.currentFileName,
+        lastSavedSnapshot: fileState.lastSavedSnapshot,
+        updatedAt: Date.now(),
+      };
+
+      saveMindMapDraft(nextRecoverableDraft);
+      hasStoredDraftForCurrentSessionRef.current = true;
+      setFileState((current) => ({
+        ...current,
+        recoverableDraft: nextRecoverableDraft,
+      }));
+    }, 750);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    currentSnapshot,
+    fileState.currentFileHandle,
+    fileState.currentFileName,
+    fileState.draftBaselineSnapshot,
+    fileState.isPending,
+    fileState.isStartupScreenVisible,
+    fileState.lastSavedSnapshot,
+    mindMap,
+  ]);
+
   const hasUnsavedFileChanges = useMemo(() => {
     if (fileState.lastSavedSnapshot === null) {
       return false;
     }
 
-    return serializeMindMapDocument(mindMap) !== fileState.lastSavedSnapshot;
-  }, [fileState.lastSavedSnapshot, mindMap]);
+    return currentSnapshot !== fileState.lastSavedSnapshot;
+  }, [currentSnapshot, fileState.lastSavedSnapshot]);
 
   return useMemo(
     () => ({
@@ -890,6 +1024,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleCollapseAll,
       handleCreateNewMindMap,
       handleDeleteSelected,
+      handleDiscardStoredDraft,
       handleDuplicateSelected,
       handleExpandAll,
       handleExportFile,
@@ -903,6 +1038,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleOpenFile,
       handleOpenRecentFile,
       handleReparentNode,
+      handleRecoverStoredDraft,
       handleSaveFile,
       handleNodeTitleChange,
       handleToggleCollapsed,
@@ -948,6 +1084,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleCollapseAll,
       handleCreateNewMindMap,
       handleDeleteSelected,
+      handleDiscardStoredDraft,
       handleDuplicateSelected,
       handleExpandAll,
       handleExportFile,
@@ -961,6 +1098,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       handleOpenFile,
       handleOpenRecentFile,
       handleReparentNode,
+      handleRecoverStoredDraft,
       handleSaveFile,
       handleNodeTitleChange,
       handleToggleCollapsed,
