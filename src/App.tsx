@@ -2,11 +2,20 @@ import {
   useCallback,
   useMemo,
   useRef,
+  useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import Lightbox from "yet-another-react-lightbox";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import "yet-another-react-lightbox/styles.css";
 import "./App.css";
 import appStyles from "./App.module.css";
-import { getNodeHeightForLayout, getVisibleNodeIds } from "./mindmap";
+import {
+  getMindMapNodeDisplayTitle,
+  getMindMapNodeMediaUrl,
+  getNodeHeightForLayout,
+  getVisibleNodeIds,
+} from "./mindmap";
 import {
   MINIMAP_HEIGHT,
   MINIMAP_WIDTH,
@@ -49,6 +58,9 @@ import { useWindowTitle } from "./features/editor/hooks/useWindowTitle";
 
 function App() {
   const centerOnNodeRef = useRef<(nodeId: string) => boolean>(() => false);
+  const [imagePreviewNodeId, setImagePreviewNodeId] = useState<string | null>(
+    null,
+  );
   const centerOnNode = useCallback((nodeId: string) => {
     return centerOnNodeRef.current(nodeId);
   }, []);
@@ -271,6 +283,41 @@ function App() {
       visibleNodeIds,
     ],
   );
+  const imagePreviewNode =
+    imagePreviewNodeId === null ? null : editor.mindMap.nodes[imagePreviewNodeId];
+  const imagePreviewUrl =
+    imagePreviewNode?.kind === "image"
+      ? getMindMapNodeMediaUrl(imagePreviewNode)
+      : "";
+  const imagePreviewTitle = imagePreviewNode
+    ? getMindMapNodeDisplayTitle(imagePreviewNode)
+    : "Image preview";
+  const imagePreviewSlides = imagePreviewUrl
+    ? [
+        {
+          alt: imagePreviewTitle,
+          src: imagePreviewUrl,
+        },
+      ]
+    : [];
+  const closeImagePreview = useCallback(() => {
+    setImagePreviewNodeId(null);
+  }, []);
+  const handleNodeImageView = useCallback(
+    (nodeId: string) => {
+      const node = editor.mindMap.nodes[nodeId];
+      if (!node || node.kind !== "image" || !getMindMapNodeMediaUrl(node)) {
+        return;
+      }
+
+      editor.selectNode(nodeId, {
+        openMenu: false,
+        showInspector: true,
+      });
+      setImagePreviewNodeId(nodeId);
+    },
+    [editor],
+  );
 
   const updateCameraFromMinimapPoint = useCallback(
     (clientX: number, clientY: number) => {
@@ -491,6 +538,7 @@ function App() {
             showInspector: true,
           })
         }
+        onNodeImageView={handleNodeImageView}
         onToggleCollapsed={editor.handleToggleCollapsed}
         onStagePointerDown={(event) =>
           canvasState.startPanning(event, editor.clearSelection)
@@ -595,6 +643,20 @@ function App() {
         onReset={editor.resetBackgroundDialog}
         onSelect={editor.handleBackgroundPresetChange}
         onClose={editor.closeBackgroundDialog}
+      />
+
+      <Lightbox
+        carousel={{ finite: true }}
+        close={closeImagePreview}
+        controller={{ closeOnBackdropClick: true }}
+        open={Boolean(imagePreviewUrl)}
+        plugins={[Zoom]}
+        slides={imagePreviewSlides}
+        zoom={{
+          maxZoomPixelRatio: 4,
+          scrollToZoom: true,
+          wheelZoomDistanceFactor: 120,
+        }}
       />
     </div>
   );

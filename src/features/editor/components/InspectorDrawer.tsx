@@ -1,4 +1,14 @@
-import { Suspense, lazy } from "react";
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ClipboardEvent,
+  type DragEvent,
+  type KeyboardEvent,
+} from "react";
 import type { EmojiClickData } from "emoji-picker-react";
 import {
   MINDMAP_NODE_KINDS,
@@ -12,6 +22,8 @@ import {
 } from "../../../mindmap";
 import drawerStyles from "./EditorDrawer.module.css";
 import styles from "./InspectorDrawer.module.css";
+
+const IMAGE_FILE_ACCEPT = "image/*,.avif,.bmp,.gif,.jpeg,.jpg,.png,.svg,.webp";
 
 const EmojiPickerPanel = lazy(async () => {
   const emojiPickerModule = await import("emoji-picker-react");
@@ -52,6 +64,56 @@ type InspectorDrawerProps = {
   selectedNode: MindMapNode;
 };
 
+function getFirstTransferFile(dataTransfer: DataTransfer | null): File | null {
+  if (!dataTransfer) {
+    return null;
+  }
+
+  const fileItem = Array.from(dataTransfer.items).find((item) => item.kind === "file");
+  const itemFile = fileItem?.getAsFile();
+
+  if (itemFile) {
+    return itemFile;
+  }
+
+  return dataTransfer.files[0] ?? null;
+}
+
+function isSupportedImageFile(file: File): boolean {
+  return (
+    file.type.startsWith("image/") ||
+    /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(file.name)
+  );
+}
+
+async function readFileAsDataUrl(file: File): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.addEventListener(
+      "load",
+      () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+          return;
+        }
+
+        reject(new Error("Unable to read the selected image."));
+      },
+      { once: true },
+    );
+    reader.addEventListener(
+      "error",
+      () => {
+        reject(reader.error ?? new Error("Unable to read the selected image."));
+      },
+      { once: true },
+    );
+
+    reader.readAsDataURL(file);
+  });
+}
+
 export function InspectorDrawer({
   isOpen,
   onNodeColorChange,
@@ -63,14 +125,103 @@ export function InspectorDrawer({
   onNodeTitleChange,
   selectedNode,
 }: InspectorDrawerProps) {
+  const [imageImportMessage, setImageImportMessage] = useState<string | null>(null);
+  const [isImportingImage, setIsImportingImage] = useState(false);
+  const imageFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setImageImportMessage(null);
+    setIsImportingImage(false);
+  }, [selectedNode.id, selectedNode.kind]);
+
   if (!isOpen) {
     return null;
   }
 
   const mediaUrl = getMindMapNodeMediaUrl(selectedNode);
   const linkUrl = getMindMapNodeLinkUrl(selectedNode);
+  const hasEmbeddedImage = mediaUrl.startsWith("data:");
   const handleEmojiPickerSelect = (emojiData: EmojiClickData) => {
     onNodeEmojiChange(emojiData.emoji);
+  };
+  const handleImageFileImport = async (file: File) => {
+    if (!isSupportedImageFile(file)) {
+      setImageImportMessage("Only image files can be attached to an image node.");
+      return;
+    }
+
+    setIsImportingImage(true);
+    setImageImportMessage(`Embedding ${file.name} into this map...`);
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      onNodeImageUrlChange(dataUrl);
+      setImageImportMessage(`Embedded ${file.name}. This image now travels with the map.`);
+    } catch {
+      setImageImportMessage(`Couldn't read ${file.name}. Please try another image file.`);
+    } finally {
+      setIsImportingImage(false);
+
+      if (imageFileInputRef.current) {
+        imageFileInputRef.current.value = "";
+      }
+    }
+  };
+  const handleImageInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setImageImportMessage(null);
+    onNodeImageUrlChange(event.currentTarget.value);
+  };
+  const handleImageFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    void handleImageFileImport(file);
+  };
+  const handleImagePaste = (
+    event: ClipboardEvent<HTMLInputElement> | ClipboardEvent<HTMLDivElement>,
+  ) => {
+    const file = getFirstTransferFile(event.clipboardData);
+    if (!file) {
+      return;
+    }
+
+    event.preventDefault();
+    void handleImageFileImport(file);
+  };
+  const handleImageDrop = (event: DragEvent<HTMLDivElement>) => {
+    const file = getFirstTransferFile(event.dataTransfer);
+    if (!file) {
+      return;
+    }
+
+    event.preventDefault();
+    void handleImageFileImport(file);
+  };
+  const handleImageDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (getFirstTransferFile(event.dataTransfer)) {
+      event.preventDefault();
+    }
+  };
+  const handleImageUploadKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    imageFileInputRef.current?.click();
+  };
+  const openImagePicker = () => {
+    if (isImportingImage) {
+      return;
+    }
+
+    imageFileInputRef.current?.click();
+  };
+  const clearImageSource = () => {
+    setImageImportMessage(null);
+    onNodeImageUrlChange("");
   };
 
   return (
@@ -123,17 +274,69 @@ export function InspectorDrawer({
         </label>
 
         {selectedNode.kind === "image" ? (
-          <label className={styles.field}>
-            <span>Image URL</span>
+          <div className={styles.field}>
+            <span>Image source</span>
             <input
-              onChange={(event) => onNodeImageUrlChange(event.currentTarget.value)}
+              onChange={handleImageInputChange}
+              onPaste={handleImagePaste}
               placeholder="https://example.com/image.png"
-              value={mediaUrl}
+              value={hasEmbeddedImage ? "" : mediaUrl}
             />
             <small className={styles.fieldHint}>
-              Paste a hosted image or a local app asset path.
+              {hasEmbeddedImage
+                ? "A local image is embedded in this node. Paste a URL to replace it, or clear it below."
+                : "Paste a hosted image URL, or use the uploader below for a local image file."}
             </small>
-          </label>
+            <input
+              accept={IMAGE_FILE_ACCEPT}
+              className={styles.visuallyHidden}
+              onChange={handleImageFileInputChange}
+              ref={imageFileInputRef}
+              type="file"
+            />
+            <div className={styles.fieldActionRow}>
+              <button
+                className={styles.secondaryButton}
+                disabled={isImportingImage}
+                onClick={openImagePicker}
+                type="button"
+              >
+                {isImportingImage ? "Embedding image..." : "Choose image"}
+              </button>
+              {mediaUrl ? (
+                <button
+                  className={styles.secondaryButton}
+                  onClick={clearImageSource}
+                  type="button"
+                >
+                  Clear image
+                </button>
+              ) : null}
+            </div>
+            <div
+              className={[
+                styles.imageUploadZone,
+                isImportingImage ? styles.imageUploadZoneBusy : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={openImagePicker}
+              onDragOver={handleImageDragOver}
+              onDrop={handleImageDrop}
+              onKeyDown={handleImageUploadKeyDown}
+              onPaste={handleImagePaste}
+              role="button"
+              tabIndex={0}
+            >
+              <p className={styles.imageUploadTitle}>
+                Paste, drop, or choose a local image
+              </p>
+              <p className={styles.imageUploadBody}>
+                {imageImportMessage ??
+                  "Supports PNG, JPG, GIF, WebP, SVG, AVIF, and BMP. Local images are embedded into the map so they keep rendering after save/export."}
+              </p>
+            </div>
+          </div>
         ) : null}
 
         {selectedNode.kind === "link" ? (

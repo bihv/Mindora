@@ -266,7 +266,6 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  pointer-events: none;
 }
 
 .mindNodeMediaPreview {
@@ -281,6 +280,26 @@
   font-size: 0.68rem;
   font-weight: 600;
   text-align: center;
+}
+
+.mindNodeEmojiBadge {
+  pointer-events: none;
+}
+
+.mindNodeMediaPreviewButton {
+  padding: 0;
+  border: none;
+  appearance: none;
+  color: inherit;
+  cursor: zoom-in;
+  pointer-events: auto;
+}
+
+.mindNodeMediaPreviewButton:hover,
+.mindNodeMediaPreviewButton:focus-visible {
+  filter: brightness(1.12) saturate(1.06);
+  outline: 2px solid rgba(255, 255, 255, 0.32);
+  outline-offset: 2px;
 }
 
 .mindNodeMediaImage {

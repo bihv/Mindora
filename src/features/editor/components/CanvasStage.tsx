@@ -60,6 +60,7 @@ type CanvasStageProps = {
     event: ReactPointerEvent<HTMLElement>,
   ) => void;
   onNodeSelect: (nodeId: string) => void;
+  onNodeImageView: (nodeId: string) => void;
   onToggleCollapsed: (nodeId: string) => void;
   onStagePointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   panning: boolean;
@@ -94,6 +95,16 @@ function handleExternalLinkClick(
   void openExternalUrl(url);
 }
 
+function handleImageViewClick(
+  event: ReactMouseEvent<HTMLButtonElement>,
+  nodeId: string,
+  onNodeImageView: (nodeId: string) => void,
+): void {
+  event.preventDefault();
+  event.stopPropagation();
+  onNodeImageView(nodeId);
+}
+
 function withAlpha(hexColor: string, alpha: number): string {
   const normalizedHex = hexColor.replace("#", "");
 
@@ -112,6 +123,7 @@ function renderLineNodeDetail(
   node: MindMapNode,
   options: {
     isMindMapLineLeft: boolean;
+    onNodeImageView: (nodeId: string) => void;
   },
 ): ReactNode {
   const isReverse = options.isMindMapLineLeft && node.parentId !== null;
@@ -145,19 +157,32 @@ function renderLineNodeDetail(
 
     return (
       <div className={rowClassName}>
-        <div className={styles.mindNodeOrganicMediaChip}>
-          {mediaUrl ? (
+        {mediaUrl ? (
+          <button
+            aria-label={`View image for ${getMindMapNodeDisplayTitle(node)}`}
+            className={[
+              styles.mindNodeOrganicMediaChip,
+              styles.mindNodeMediaPreviewButton,
+            ].join(" ")}
+            onClick={(event) =>
+              handleImageViewClick(event, node.id, options.onNodeImageView)
+            }
+            onPointerDown={(event) => event.stopPropagation()}
+            type="button"
+          >
             <img
               alt={getMindMapNodeDisplayTitle(node)}
               className={styles.mindNodeOrganicMediaImage}
               draggable={false}
               src={mediaUrl}
             />
-          ) : (
+          </button>
+        ) : (
+          <div className={styles.mindNodeOrganicMediaChip}>
             <span>IMG</span>
-          )}
-        </div>
-        <p className={detailClassName}>{detailText}</p>
+          </div>
+        )}
+        {detailText ? <p className={detailClassName}>{detailText}</p> : null}
       </div>
     );
   }
@@ -207,13 +232,18 @@ function renderNodeContent(
     isLineLayout: boolean;
     isMindMapLine: boolean;
     isMindMapLineLeft: boolean;
+    onNodeImageView: (nodeId: string) => void;
   },
 ): ReactNode {
-  const { isLineLayout, isMindMapLine, isMindMapLineLeft } = options;
+  const { isLineLayout, isMindMapLine, isMindMapLineLeft, onNodeImageView } =
+    options;
   const title = getMindMapNodeDisplayTitle(node);
 
   if (isLineLayout) {
-    const lineNodeDetail = renderLineNodeDetail(node, { isMindMapLineLeft });
+    const lineNodeDetail = renderLineNodeDetail(node, {
+      isMindMapLineLeft,
+      onNodeImageView,
+    });
 
     return (
       <div
@@ -263,21 +293,34 @@ function renderNodeContent(
     return (
       <div className={styles.mindNodeContent}>
         <div className={styles.mindNodeRichRow}>
-          <div className={styles.mindNodeMediaPreview}>
-            {mediaUrl ? (
+          {mediaUrl ? (
+            <button
+              aria-label={`View image for ${title}`}
+              className={[
+                styles.mindNodeMediaPreview,
+                styles.mindNodeMediaPreviewButton,
+              ].join(" ")}
+              onClick={(event) =>
+                handleImageViewClick(event, node.id, onNodeImageView)
+              }
+              onPointerDown={(event) => event.stopPropagation()}
+              type="button"
+            >
               <img
                 alt={title}
                 className={styles.mindNodeMediaImage}
                 draggable={false}
                 src={mediaUrl}
               />
-            ) : (
+            </button>
+          ) : (
+            <div className={styles.mindNodeMediaPreview}>
               <span>{MINDMAP_NODE_KIND_LABELS.image}</span>
-            )}
-          </div>
+            </div>
+          )}
           <div className={styles.mindNodeRichMeta}>
             <h3 className={styles.mindNodeCompactTitle}>{title}</h3>
-            <p className={styles.mindNodeDetail}>{detail}</p>
+            {detail ? <p className={styles.mindNodeDetail}>{detail}</p> : null}
           </div>
         </div>
       </div>
@@ -344,6 +387,7 @@ export function CanvasStage({
   onNodeConnectorPointerDown,
   onNodePointerDown,
   onNodeSelect,
+  onNodeImageView,
   onToggleCollapsed,
   onStagePointerDown,
   panning,
@@ -486,6 +530,7 @@ export function CanvasStage({
               isLineLayout,
               isMindMapLine,
               isMindMapLineLeft,
+              onNodeImageView,
             })}
 
             {node.parentId !== null ? (

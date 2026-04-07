@@ -263,7 +263,7 @@ export function getMindMapNodeDetailText(node: MindMapNode): string {
   }
 
   if (node.kind === "image") {
-    return (node.notes || getMindMapNodeMediaUrl(node) || "Add an image source").trim();
+    return node.notes.trim();
   }
 
   if (node.kind === "link") {
