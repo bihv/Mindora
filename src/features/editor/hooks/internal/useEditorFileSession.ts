@@ -163,6 +163,13 @@ export function useEditorFileSession({
     replaceDocument(createDefaultMindMapDocument());
   }, [replaceDocument]);
 
+  const handleReplaceWithNewDocument = useCallback(
+    (document: MindMapDocument) => {
+      replaceDocument(document);
+    },
+    [replaceDocument],
+  );
+
   const handleRecoverStoredDraft = useCallback(() => {
     const recoverableDraft = fileState.recoverableDraft;
     if (!recoverableDraft) {
@@ -291,6 +298,7 @@ export function useEditorFileSession({
     () => ({
       fileState,
       handleCreateNewMindMap,
+      handleReplaceWithNewDocument,
       handleDiscardStoredDraft,
       handleExportFile,
       handleOpenFile,
@@ -304,6 +312,7 @@ export function useEditorFileSession({
     [
       fileState,
       handleCreateNewMindMap,
+      handleReplaceWithNewDocument,
       handleDiscardStoredDraft,
       handleExportFile,
       handleOpenFile,

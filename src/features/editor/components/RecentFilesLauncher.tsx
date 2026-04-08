@@ -3,8 +3,10 @@ import type { RecentMindMapFile } from "../../../platform/files/types";
 import styles from "./RecentFilesLauncher.module.css";
 
 type RecentFilesLauncherProps = {
+  canGenerateWithAi: boolean;
   isFileActionPending: boolean;
   lastFileActionError: string | null;
+  onCreateAiMindMap: () => void;
   onCreateMindMap: () => void;
   onDiscardStoredDraft: () => void;
   onOpenFile: () => void;
@@ -15,8 +17,10 @@ type RecentFilesLauncherProps = {
 };
 
 export function RecentFilesLauncher({
+  canGenerateWithAi,
   isFileActionPending,
   lastFileActionError,
+  onCreateAiMindMap,
   onCreateMindMap,
   onDiscardStoredDraft,
   onOpenFile,
@@ -100,6 +104,16 @@ export function RecentFilesLauncher({
             >
               {isFileActionPending ? "Opening..." : "Browse files"}
             </button>
+            {canGenerateWithAi ? (
+              <button
+                className={styles.secondaryButton}
+                disabled={isFileActionPending}
+                onClick={onCreateAiMindMap}
+                type="button"
+              >
+                Generate with AI
+              </button>
+            ) : null}
           </div>
           <span className={styles.hint}>Supported: `.mindora`</span>
         </div>

@@ -2,6 +2,7 @@ import styles from "./CanvasViewportControls.module.css";
 
 type CanvasViewportControlsProps = {
   canCenterSelected: boolean;
+  onGenerateAiMap?: () => void;
   onCenterSelected: () => void;
   onFitMap: () => void;
   onZoomIn: () => void;
@@ -11,6 +12,7 @@ type CanvasViewportControlsProps = {
 
 export function CanvasViewportControls({
   canCenterSelected,
+  onGenerateAiMap,
   onCenterSelected,
   onFitMap,
   onZoomIn,
@@ -46,6 +48,11 @@ export function CanvasViewportControls({
       </div>
 
       <div className={styles.controlGroup}>
+        {onGenerateAiMap ? (
+          <button className={styles.controlButton} onClick={onGenerateAiMap} type="button">
+            AI map
+          </button>
+        ) : null}
         <button className={styles.controlButton} onClick={onFitMap} type="button">
           Fit map
         </button>

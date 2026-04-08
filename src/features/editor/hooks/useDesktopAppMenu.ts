@@ -10,6 +10,7 @@ import {
 import type { ExportFormat } from "../../export";
 
 type UseDesktopAppMenuArgs = {
+  canGenerateWithAi: boolean;
   canDuplicateNode: boolean;
   canRedo: boolean;
   canUndo: boolean;
@@ -19,6 +20,7 @@ type UseDesktopAppMenuArgs = {
   onAutoLayout: () => void;
   onDuplicateNode: () => void;
   onExportFile: (format: ExportFormat) => Promise<void> | void;
+  onNewAiMindMap: () => void;
   onOpenBackgroundDialog: () => void;
   onOpenLayoutDialog: () => void;
   onNewMindMap: () => void;
@@ -38,6 +40,7 @@ type DesktopAppMenu = {
   exportSvgItem: MenuItem;
   mindMapTypeItem: MenuItem;
   menu: Menu;
+  newAiMindMapItem: MenuItem;
   newMindMapItem: MenuItem;
   openItem: MenuItem;
   outlineItem: CheckMenuItem;
@@ -89,6 +92,7 @@ async function createDesktopAppMenu(
 ): Promise<DesktopAppMenu> {
   const [
     newMindMapItem,
+    newAiMindMapItem,
     openItem,
     saveItem,
     exportPngItem,
@@ -117,6 +121,13 @@ async function createDesktopAppMenu(
       accelerator: "CmdOrCtrl+N",
       action: () => {
         getDesktopAppMenuRegistry().latestArgs?.onNewMindMap();
+      },
+    }),
+    MenuItem.new({
+      id: "file-new-ai-mindmap",
+      text: "New AI Mind Map...",
+      action: () => {
+        getDesktopAppMenuRegistry().latestArgs?.onNewAiMindMap();
       },
     }),
     MenuItem.new({
@@ -230,6 +241,7 @@ async function createDesktopAppMenu(
       text: "File",
       items: [
         newMindMapItem,
+        newAiMindMapItem,
         openItem,
         saveItem,
         fileSeparator,
@@ -276,6 +288,7 @@ async function createDesktopAppMenu(
     exportSvgItem,
     mindMapTypeItem,
     menu,
+    newAiMindMapItem,
     newMindMapItem,
     openItem,
     outlineItem,
@@ -291,6 +304,9 @@ async function syncDesktopAppMenu(
 ): Promise<void> {
   await Promise.all([
     menu.newMindMapItem.setEnabled(!args.isFileActionPending),
+    menu.newAiMindMapItem.setEnabled(
+      args.canGenerateWithAi && !args.isFileActionPending,
+    ),
     menu.openItem.setEnabled(!args.isFileActionPending),
     menu.saveItem.setEnabled(!args.isFileActionPending),
     menu.saveItem.setText(args.currentFileName ? "Save" : "Save As..."),

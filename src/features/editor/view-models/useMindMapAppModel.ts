@@ -48,12 +48,52 @@ export function useMindMapAppModel() {
 
   if (startupScreen) {
     return {
+      aiDialog: {
+        apiKey: editor.apiKey,
+        endpointUrl: editor.endpointUrl,
+        isAvailable: editor.aiGenerationEnabled,
+        isOpen: editor.isOpen,
+        isPending: editor.isPending,
+        lastError: editor.lastError,
+        model: editor.model,
+        onApiKeyChange: editor.setApiKey,
+        onEndpointUrlChange: editor.setEndpointUrl,
+        onClose: editor.closeDialog,
+        onModelChange: editor.setModel,
+        onRememberChange: editor.setRemember,
+        onSourceTextChange: editor.setSourceText,
+        onSubmit: editor.submit,
+        onTopicChange: editor.setTopic,
+        remember: editor.remember,
+        sourceText: editor.sourceText,
+        topic: editor.topic,
+      },
       startupScreen,
       workspace: null,
     };
   }
 
   return {
+    aiDialog: {
+      apiKey: editor.apiKey,
+      endpointUrl: editor.endpointUrl,
+      isAvailable: editor.aiGenerationEnabled,
+      isOpen: editor.isOpen,
+      isPending: editor.isPending,
+      lastError: editor.lastError,
+      model: editor.model,
+      onApiKeyChange: editor.setApiKey,
+      onEndpointUrlChange: editor.setEndpointUrl,
+      onClose: editor.closeDialog,
+      onModelChange: editor.setModel,
+      onRememberChange: editor.setRemember,
+      onSourceTextChange: editor.setSourceText,
+      onSubmit: editor.submit,
+      onTopicChange: editor.setTopic,
+      remember: editor.remember,
+      sourceText: editor.sourceText,
+      topic: editor.topic,
+    },
     startupScreen: null,
     workspace: {
       ...workspaceCommands,

@@ -8,6 +8,7 @@ import type { MindMapDocument } from "../../../domain/mindmap/model";
 import { serializeMindMapDocument } from "../../../platform/files/repository";
 import { useEditorChromeState } from "./internal/useEditorChromeState";
 import { useEditorDraftPersistence } from "./internal/useEditorDraftPersistence";
+import { useAiMindMapGeneration } from "./internal/useAiMindMapGeneration";
 import { useEditorFileSession } from "./internal/useEditorFileSession";
 import { useEditorHistoryState } from "./internal/useEditorHistoryState";
 import { useEditorNodeActions } from "./internal/useEditorNodeActions";
@@ -96,6 +97,13 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     setFileState: fileSession.setFileState,
   });
 
+  const aiGeneration = useAiMindMapGeneration({
+    currentDocument: history.mindMap,
+    isStartupScreenVisible: fileSession.fileState.isStartupScreenVisible,
+    layoutType,
+    replaceWithNewDocument: fileSession.handleReplaceWithNewDocument,
+  });
+
   const openLayoutDialog = useCallback(() => {
     chrome.openLayoutDialog(layoutType);
   }, [chrome, layoutType]);
@@ -104,8 +112,16 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
     chrome.openBackgroundDialog(backgroundPresetId);
   }, [backgroundPresetId, chrome]);
 
+  const openAiDialog = useCallback(() => {
+    chrome.closeBackgroundDialog();
+    chrome.closeLayoutDialog();
+    chrome.setIsInspectorOpen(false);
+    aiGeneration.openDialog();
+  }, [aiGeneration, chrome]);
+
   return useMemo(
     () => ({
+      ...aiGeneration,
       ...chrome,
       ...fileSession,
       ...history,
@@ -113,12 +129,14 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       backgroundPresetId,
       hasUnsavedFileChanges,
       layoutType,
+      openAiDialog,
       openBackgroundDialog,
       openLayoutDialog,
       resetBackgroundDialog,
       resetLayoutDialog,
     }),
     [
+      aiGeneration,
       backgroundPresetId,
       chrome,
       fileSession,
@@ -126,6 +144,7 @@ export function useMindMapEditor({ centerOnNode }: UseMindMapEditorArgs) {
       history,
       layoutType,
       nodeActions,
+      openAiDialog,
       openBackgroundDialog,
       openLayoutDialog,
       resetBackgroundDialog,

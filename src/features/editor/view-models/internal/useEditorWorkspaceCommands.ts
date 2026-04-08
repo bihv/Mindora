@@ -53,6 +53,7 @@ export function useEditorWorkspaceCommands({
   });
 
   useDesktopAppMenu({
+    canGenerateWithAi: editor.aiGenerationEnabled,
     canDuplicateNode:
       editor.hasActiveSelection && editor.selectedNode.parentId !== null,
     canRedo:
@@ -64,6 +65,7 @@ export function useEditorWorkspaceCommands({
     onAutoLayout: editor.handleAutoLayout,
     onDuplicateNode: editor.handleDuplicateSelected,
     onExportFile: editor.handleExportFile,
+    onNewAiMindMap: editor.openAiDialog,
     onOpenBackgroundDialog: editor.openBackgroundDialog,
     onOpenLayoutDialog: editor.openLayoutDialog,
     onNewMindMap: editor.handleCreateNewMindMap,
@@ -116,6 +118,7 @@ export function useEditorWorkspaceCommands({
     },
     viewportControls: {
       canCenterSelected: Boolean(editor.mindMap.nodes[editor.selectedNodeId]),
+      onGenerateAiMap: editor.aiGenerationEnabled ? editor.openAiDialog : undefined,
       onCenterSelected: handleCenterSelectedNode,
       onFitMap: handleFitMap,
       onZoomIn: canvasCommands.zoomIn,

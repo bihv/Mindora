@@ -7,6 +7,9 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            commands::ai_secrets::delete_ai_api_key,
+            commands::ai_secrets::get_ai_api_key,
+            commands::ai_secrets::set_ai_api_key,
             commands::files::read_mindmap_file,
             commands::files::write_mindmap_file,
             commands::files::write_binary_file,

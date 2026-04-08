@@ -1,8 +1,15 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { centerOnCanvasNodeMock } = vi.hoisted(() => ({
+const { centerOnCanvasNodeMock, invokeMock, isTauriMock } = vi.hoisted(() => ({
   centerOnCanvasNodeMock: vi.fn(() => true),
+  invokeMock: vi.fn(),
+  isTauriMock: vi.fn(() => false),
+}));
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: invokeMock,
+  isTauri: isTauriMock,
 }));
 
 vi.mock("../hooks/useCanvasState", () => ({
@@ -39,6 +46,9 @@ import { useMindMapAppModel } from "./useMindMapAppModel";
 describe("useMindMapAppModel", () => {
   beforeEach(() => {
     centerOnCanvasNodeMock.mockClear();
+    invokeMock.mockReset();
+    invokeMock.mockResolvedValue(null);
+    isTauriMock.mockReturnValue(false);
   });
 
   it("wires center node through workspace controls after startup", () => {
@@ -88,5 +98,37 @@ describe("useMindMapAppModel", () => {
     expect(centerOnCanvasNodeMock).toHaveBeenCalledWith(
       result.current.workspace?.canvasStage.selectedNodeId,
     );
+  });
+
+  it("opens the desktop AI flow from startup and workspace entry points", async () => {
+    isTauriMock.mockReturnValue(true);
+
+    const { result } = renderHook(() => useMindMapAppModel());
+
+    expect(result.current.aiDialog.isAvailable).toBe(true);
+
+    act(() => {
+      result.current.startupScreen?.onCreateAiMindMap();
+    });
+
+    await waitFor(() => {
+      expect(result.current.aiDialog.isOpen).toBe(true);
+    });
+
+    act(() => {
+      result.current.aiDialog.onClose();
+    });
+
+    act(() => {
+      result.current.startupScreen?.onCreateMindMap();
+    });
+
+    act(() => {
+      result.current.workspace?.viewportControls.onGenerateAiMap?.();
+    });
+
+    await waitFor(() => {
+      expect(result.current.aiDialog.isOpen).toBe(true);
+    });
   });
 });

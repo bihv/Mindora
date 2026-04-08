@@ -8,6 +8,8 @@ export function useEditorStartupScreenModel(editor: EditorModel) {
   }
 
   return {
+    canGenerateWithAi: editor.aiGenerationEnabled,
+    onCreateAiMindMap: editor.openAiDialog,
     isFileActionPending: editor.fileState.isPending,
     lastFileActionError: editor.fileState.lastError,
     onCreateMindMap: editor.handleCreateNewMindMap,
